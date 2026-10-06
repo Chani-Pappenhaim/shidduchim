@@ -9,6 +9,8 @@ import { CandidateFiles } from "@/components/candidates/candidate-files";
 import { CandidateNotes } from "@/components/candidates/candidate-notes";
 import { StatusBadge } from "@/components/candidates/status-badge";
 import { CandidateIntroductions } from "@/components/introductions/candidate-introductions";
+import { ReminderForm } from "@/components/reminders/reminder-form";
+import { ReminderList } from "@/components/reminders/reminder-list";
 import { LinkButton } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { Section } from "@/components/ui/section";
@@ -17,6 +19,7 @@ import { routes } from "@/lib/routes";
 import { requireMatchmakerId } from "@/server/auth/session";
 import { getCandidate } from "@/server/services/candidate-service";
 import { introductionsOf } from "@/server/services/introduction-service";
+import { listOpenReminders } from "@/server/services/reminder-service";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -43,7 +46,10 @@ function TextBlock({ title, text }: { title: string; text: string | null }) {
 
 export default async function CandidatePage({ params }: Props) {
   const candidate = await loadCandidate((await params).id);
-  const introductions = await introductionsOf(candidate.matchmakerId, candidate.id, candidate.side);
+  const [introductions, reminders] = await Promise.all([
+    introductionsOf(candidate.matchmakerId, candidate.id, candidate.side),
+    listOpenReminders(candidate.matchmakerId, { candidateId: candidate.id }),
+  ]);
   const photo = candidate.files.find((f) => f.kind === "PHOTO");
   const labels = SIDE_LABELS[candidate.side];
 
@@ -93,6 +99,12 @@ export default async function CandidatePage({ params }: Props) {
 
         <Section title="הצעות">
           <CandidateIntroductions introductions={introductions} />
+        </Section>
+        <Section title="תזכורות">
+          <div className="flex flex-col gap-4">
+            {reminders.length > 0 && <ReminderList reminders={reminders} showSubject={false} />}
+            <ReminderForm candidateId={candidate.id} />
+          </div>
         </Section>
         <TextBlock title={`על ה${labels.one}`} text={candidate.about} />
         <TextBlock title="מה מחפשים" text={candidate.lookingFor} />
