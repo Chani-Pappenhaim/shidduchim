@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Side {
+  MALE
+  FEMALE
+}
+
+enum CandidateStatus {
+  AVAILABLE
+  IN_PROCESS
+  PAUSED
+  ENGAGED
+}
+
+enum IntroductionStatus {
+  PROPOSED
+  CHECKING
+  MEETING
+  DECLINED
+  ENGAGED
+}
+
+enum IntroductionEventType {
+  CREATED
+  STATUS_CHANGED
+  MEETING_ADDED
+  EMAIL_SENT
+}
+
+enum FileKind {
+  PHOTO
+  RESUME
+}
+
+model Matchmaker {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  name           String
+  phone          String?
+  city           String?
+  about          String?
+  emailSignature String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  candidates     Candidate[]
+  introductions  Introduction[]
+  reminders      Reminder[]
+  mailConnection MailConnection?
+}
+
+// OAuth connection that lets a matchmaker send mail from their own mailbox
+model MailConnection {
+  id                    String   @id @default(cuid())
+  matchmakerId          String   @unique
+  provider              String
+  email                 String
+  encryptedRefreshToken String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  matchmaker Matchmaker @relation(fields: [matchmakerId], references: [id], onDelete: Cascade)
+}
+
+model Candidate {
+  id                String          @id @default(cuid())
+  matchmakerId      String
+  side              Side
+  firstName         String
+  lastName          String
+  birthDate         DateTime?
+  city              String?
+  community         String?
+  occupation        String?
+  heightCm          Int?
+  phone             String?
+  email             String?
+  parentsInfo       String?
+  about             String?
+  lookingFor        String?
+  status            CandidateStatus @default(AVAILABLE)
+  profileVerifiedAt DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  matchmaker            Matchmaker        @relation(fields: [matchmakerId], references: [id], onDelete: Cascade)
+  files                 CandidateFile[]
+  notes                 PrivateNote[]
+  introductionsAsMale   Introduction[]    @relation("IntroductionMale")
+  introductionsAsFemale Introduction[]    @relation("IntroductionFemale")
+  reminders             Reminder[]
+  invites               CandidateInvite[]
+
+  @@index([matchmakerId, side, status])
+  @@index([matchmakerId, lastName, firstName])
+}
+
+model CandidateFile {
+  id           String   @id @default(cuid())
+  candidateId  String
+  kind         FileKind
+  storageKey   String   @unique
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  createdAt    DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, kind])
+}
+
+// Free-text notes visible only to the matchmaker
+model PrivateNote {
+  id          String   @id @default(cuid())
+  candidateId String
+  body        String
+  createdAt   DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, createdAt])
+}
+
+// A proposed match between one male and one female candidate, stored once per pair
+model Introduction {
+  id           String             @id @default(cuid())
+  matchmakerId String
+  maleId       String
+  femaleId     String
+  status       IntroductionStatus @default(PROPOSED)
+  proposedBy   String?
+  note         String?
+  engagedAt    DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  matchmaker Matchmaker          @relation(fields: [matchmakerId], references: [id], onDelete: Cascade)
+  male       Candidate           @relation("IntroductionMale", fields: [maleId], references: [id], onDelete: Cascade)
+  female     Candidate           @relation("IntroductionFemale", fields: [femaleId], references: [id], onDelete: Cascade)
+  meetings   Meeting[]
+  events     IntroductionEvent[]
+  reminders  Reminder[]
+
+  @@unique([maleId, femaleId])
+  @@index([matchmakerId, status, updatedAt])
+  @@index([femaleId])
+}
+
+model Meeting {
+  id             String   @id @default(cuid())
+  introductionId String
+  date           DateTime
+  location       String?
+  summary        String?
+  createdAt      DateTime @default(now())
+
+  introduction Introduction @relation(fields: [introductionId], references: [id], onDelete: Cascade)
+
+  @@index([introductionId, date])
+}
+
+model IntroductionEvent {
+  id             String                @id @default(cuid())
+  introductionId String
+  type           IntroductionEventType
+  status         IntroductionStatus?
+  message        String?
+  createdAt      DateTime              @default(now())
+
+  introduction Introduction @relation(fields: [introductionId], references: [id], onDelete: Cascade)
+
+  @@index([introductionId, createdAt])
+}
+
+model Reminder {
+  id             String    @id @default(cuid())
+  matchmakerId   String
+  candidateId    String?
+  introductionId String?
+  title          String
+  dueAt          DateTime
+  doneAt         DateTime?
+  notifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  matchmaker   Matchmaker    @relation(fields: [matchmakerId], references: [id], onDelete: Cascade)
+  candidate    Candidate?    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  introduction Introduction? @relation(fields: [introductionId], references: [id], onDelete: Cascade)
+
+  @@index([matchmakerId, doneAt, dueAt])
+}
+
+// Invitation link that lets a candidate fill in their own profile
+model CandidateInvite {
+  id           String    @id @default(cuid())
+  candidateId  String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  otpHash      String?
+  otpExpiresAt DateTime?
+  otpAttempts  Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+}
