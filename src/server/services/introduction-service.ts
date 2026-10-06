@@ -108,6 +108,8 @@ export function listSuccesses(matchmakerId: string) {
   });
 }
 
+export type Success = Awaited<ReturnType<typeof listSuccesses>>[number];
+
 export function getIntroduction(matchmakerId: string, id: string) {
   return db.introduction.findFirst({
     where: { id, matchmakerId },
