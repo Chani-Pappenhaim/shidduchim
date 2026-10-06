@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
-import { Karantina, Rubik } from "next/font/google";
+// Self-hosted fonts, so builds and pages never depend on reaching Google Fonts
+import "@fontsource/karantina/hebrew-400.css";
+import "@fontsource/karantina/hebrew-700.css";
+import "@fontsource/karantina/latin-400.css";
+import "@fontsource/karantina/latin-700.css";
+import "@fontsource-variable/rubik/wght.css";
 import "./globals.css";
-
-const karantina = Karantina({
-  variable: "--font-karantina",
-  subsets: ["hebrew", "latin"],
-  weight: ["400", "700"],
-});
-
-const rubik = Rubik({
-  variable: "--font-rubik",
-  subsets: ["hebrew", "latin"],
-});
 
 export const metadata: Metadata = {
   title: { default: "שדכונס", template: "%s · שדכונס" },
@@ -20,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="he" dir="rtl" className={`${karantina.variable} ${rubik.variable}`}>
+    <html lang="he" dir="rtl">
       <body className="min-h-dvh">{children}</body>
     </html>
   );

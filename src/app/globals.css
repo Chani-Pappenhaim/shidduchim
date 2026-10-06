@@ -16,8 +16,8 @@
   --color-success: #2f9e62;
   --color-danger: #d43d2f;
 
-  --font-display: var(--font-karantina), "Arial Narrow", sans-serif;
-  --font-sans: var(--font-rubik), Arial, sans-serif;
+  --font-display: "Karantina", "Arial Narrow", sans-serif;
+  --font-sans: "Rubik Variable", Arial, sans-serif;
 
   --shadow-pop: 6px 6px 0 0 var(--color-ink);
 
