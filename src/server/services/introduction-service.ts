@@ -110,6 +110,25 @@ export function listSuccesses(matchmakerId: string) {
 
 export type Success = Awaited<ReturnType<typeof listSuccesses>>[number];
 
+// Open introductions that moved most recently
+export function listActiveIntroductions(matchmakerId: string, take: number) {
+  return db.introduction.findMany({
+    where: { matchmakerId, status: { in: OPEN_INTRODUCTION_STATUSES } },
+    select: introductionSummarySelect,
+    orderBy: { updatedAt: "desc" },
+    take,
+  });
+}
+
+export async function introductionStats(matchmakerId: string) {
+  const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+  const [open, engagedThisYear] = await Promise.all([
+    db.introduction.count({ where: { matchmakerId, status: { in: OPEN_INTRODUCTION_STATUSES } } }),
+    db.introduction.count({ where: { matchmakerId, status: IntroductionStatus.ENGAGED, engagedAt: { gte: startOfYear } } }),
+  ]);
+  return { open, engagedThisYear };
+}
+
 export function getIntroduction(matchmakerId: string, id: string) {
   return db.introduction.findFirst({
     where: { id, matchmakerId },

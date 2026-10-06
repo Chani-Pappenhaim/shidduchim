@@ -1,8 +1,14 @@
 const dateFormatter = new Intl.DateTimeFormat("he-IL", { day: "numeric", month: "long", year: "numeric" });
+// Whole-day dates (e.g. due dates) are stored as UTC midnight
+const dayFormatter = new Intl.DateTimeFormat("he-IL", { day: "numeric", month: "long", timeZone: "UTC" });
 const dateTimeFormatter = new Intl.DateTimeFormat("he-IL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export function formatDate(date: Date): string {
   return dateFormatter.format(date);
+}
+
+export function formatDay(date: Date): string {
+  return dayFormatter.format(date);
 }
 
 export function formatDateTime(date: Date): string {

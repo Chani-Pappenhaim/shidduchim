@@ -9,6 +9,8 @@ import { IntroductionStatusBadge } from "@/components/introductions/introduction
 import { IntroductionTimeline } from "@/components/introductions/introduction-timeline";
 import { Meetings } from "@/components/introductions/meetings";
 import { StatusControl } from "@/components/introductions/status-control";
+import { ReminderForm } from "@/components/reminders/reminder-form";
+import { ReminderList } from "@/components/reminders/reminder-list";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { Section } from "@/components/ui/section";
 import { ageLabel, fullName } from "@/lib/candidates";
@@ -17,6 +19,7 @@ import { formatDate } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import { requireMatchmakerId } from "@/server/auth/session";
 import { getIntroduction, type IntroductionDetails } from "@/server/services/introduction-service";
+import { listOpenReminders } from "@/server/services/reminder-service";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -51,6 +54,7 @@ function Partner({ candidate, block }: { candidate: IntroductionDetails["male"];
 
 export default async function IntroductionPage({ params }: Props) {
   const introduction = await loadIntroduction((await params).id);
+  const reminders = await listOpenReminders(await requireMatchmakerId(), { introductionId: introduction.id });
 
   return (
     <article className="flex flex-col gap-12">
@@ -85,6 +89,12 @@ export default async function IntroductionPage({ params }: Props) {
           </Section>
         </div>
         <aside className="flex flex-col gap-8">
+          <Section title="תזכורות">
+            <div className="flex flex-col gap-4">
+              {reminders.length > 0 && <ReminderList reminders={reminders} showSubject={false} />}
+              <ReminderForm introductionId={introduction.id} placeholder="למשל: לשאול איך הייתה הפגישה" />
+            </div>
+          </Section>
           <Section title="מה היה עד עכשיו">
             <IntroductionTimeline events={introduction.events} />
           </Section>
