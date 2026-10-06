@@ -15,5 +15,8 @@ export const routes = {
   newCandidate: (side: Side) => `/candidates/new?side=${SIDE_LABELS[side].slug}`,
   candidate: (id: string) => `/candidates/${id}`,
   editCandidate: (id: string) => `/candidates/${id}/edit`,
+  match: (candidateId: string) => `/candidates/${candidateId}/match`,
+  introductions: "/introductions",
+  introduction: (id: string) => `/introductions/${id}`,
   file: (id: string) => `/api/files/${id}`,
 };
