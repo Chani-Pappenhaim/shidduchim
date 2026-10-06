@@ -7,7 +7,8 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createClient() {
   const adapter = new PrismaPg({ connectionString: env.DATABASE_URL, max: env.DATABASE_POOL_SIZE });
-  return new PrismaClient({ adapter });
+  // Generous limits so a slow local database or a busy single connection does not abort transactions
+  return new PrismaClient({ adapter, transactionOptions: { maxWait: 15_000, timeout: 20_000 } });
 }
 
 // Single shared client, reused across hot reloads in development
