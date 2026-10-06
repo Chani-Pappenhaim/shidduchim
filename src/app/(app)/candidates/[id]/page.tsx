@@ -8,6 +8,7 @@ import { CandidateDetails } from "@/components/candidates/candidate-details";
 import { CandidateFiles } from "@/components/candidates/candidate-files";
 import { CandidateNotes } from "@/components/candidates/candidate-notes";
 import { StatusBadge } from "@/components/candidates/status-badge";
+import { CandidateIntroductions } from "@/components/introductions/candidate-introductions";
 import { LinkButton } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { Section } from "@/components/ui/section";
@@ -15,6 +16,7 @@ import { fullName, SIDE_LABELS } from "@/lib/candidates";
 import { routes } from "@/lib/routes";
 import { requireMatchmakerId } from "@/server/auth/session";
 import { getCandidate } from "@/server/services/candidate-service";
+import { introductionsOf } from "@/server/services/introduction-service";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -41,6 +43,7 @@ function TextBlock({ title, text }: { title: string; text: string | null }) {
 
 export default async function CandidatePage({ params }: Props) {
   const candidate = await loadCandidate((await params).id);
+  const introductions = await introductionsOf(candidate.matchmakerId, candidate.id, candidate.side);
   const photo = candidate.files.find((f) => f.kind === "PHOTO");
   const labels = SIDE_LABELS[candidate.side];
 
@@ -55,6 +58,9 @@ export default async function CandidatePage({ params }: Props) {
           <CandidateAvatar candidate={candidate} photoId={photo?.id} className="relative border-2 border-ink" />
         </div>
         <div className="flex flex-col gap-2">
+          <LinkButton href={routes.match(candidate.id)} arrow>
+            מציאת התאמה
+          </LinkButton>
           <LinkButton href={routes.editCandidate(candidate.id)} variant="secondary" arrow>
             עריכת כרטיס
           </LinkButton>
@@ -84,6 +90,10 @@ export default async function CandidatePage({ params }: Props) {
         </header>
 
         <CandidateDetails candidate={candidate} />
+
+        <Section title="הצעות">
+          <CandidateIntroductions introductions={introductions} />
+        </Section>
         <TextBlock title={`על ה${labels.one}`} text={candidate.about} />
         <TextBlock title="מה מחפשים" text={candidate.lookingFor} />
         <TextBlock title="פרטי משפחה" text={candidate.parentsInfo} />
