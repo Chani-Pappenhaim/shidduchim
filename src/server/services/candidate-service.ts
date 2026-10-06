@@ -57,6 +57,10 @@ export async function countCandidatesBySide(matchmakerId: string): Promise<Recor
   return counts;
 }
 
+export function getCandidateSummary(matchmakerId: string, id: string) {
+  return db.candidate.findFirst({ where: { id, matchmakerId }, select: candidateSummarySelect });
+}
+
 export function getCandidate(matchmakerId: string, id: string) {
   return db.candidate.findFirst({
     where: { id, matchmakerId },

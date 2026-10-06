@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SIDE_LABELS, sideFromSlug } from "@/lib/candidates";
-import { routes } from "@/lib/routes";
+import { routes, withQuery } from "@/lib/routes";
 import { candidateFiltersSchema } from "@/lib/validation/candidate";
 import { requireMatchmakerId } from "@/server/auth/session";
 import { countCandidatesBySide, listCandidates } from "@/server/services/candidate-service";
@@ -28,12 +28,7 @@ export default async function CandidatesPage({ searchParams }: { searchParams: S
 
   const labels = SIDE_LABELS[side];
   const isFiltered = Boolean(filters.q || filters.status);
-  const hrefFor = (page: number) => {
-    const query = new URLSearchParams({ side: labels.slug, page: String(page) });
-    if (filters.q) query.set("q", filters.q);
-    if (filters.status) query.set("status", filters.status);
-    return `/candidates?${query}`;
-  };
+  const hrefFor = (page: number) => withQuery("/candidates", { side: labels.slug, q: filters.q, status: filters.status, page });
 
   return (
     <>
