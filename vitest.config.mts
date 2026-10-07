@@ -14,9 +14,9 @@ export default defineConfig({
         test: { name: "unit", include: ["src/**/*.test.ts"], exclude: ["src/**/*.db.test.ts"], environment: "node" },
       },
       {
-        // Service tests against the local database; each file creates and removes its own matchmaker
+        // Service tests against the local database (run one file at a time, see the test:db script); each file creates and removes its own matchmaker
         extends: true,
-        test: { name: "db", include: ["src/**/*.db.test.ts"], setupFiles: ["dotenv/config"], fileParallelism: false, testTimeout: 30_000, hookTimeout: 60_000 },
+        test: { name: "db", include: ["src/**/*.db.test.ts"], setupFiles: ["dotenv/config"], testTimeout: 30_000, hookTimeout: 60_000 },
       },
     ],
   },
