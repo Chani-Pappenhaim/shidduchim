@@ -47,3 +47,16 @@ export function SelectField({ label, error, hint, className, id, name, children,
     </FieldShell>
   );
 }
+
+export function CheckboxField({ label, hint, className, id, name, ...props }: Omit<FieldProps, "error"> & ComponentProps<"input">) {
+  const fieldId = id ?? name!;
+  return (
+    <div className={cn("flex flex-col gap-1", className)}>
+      <label htmlFor={fieldId} className="flex cursor-pointer items-center gap-3 font-medium">
+        <input id={fieldId} name={name} type="checkbox" className="size-5 cursor-pointer accent-ink" {...props} />
+        {label}
+      </label>
+      {hint && <p className="text-sm text-muted">{hint}</p>}
+    </div>
+  );
+}

@@ -11,7 +11,8 @@ const NAV = [
   { href: "/dashboard", label: "היום שלי" },
   { href: "/candidates", label: "מועמדים" },
   { href: "/introductions", label: "שידוכים" },
-  { href: "/successes", label: "הצלחות" },
+  { href: "/engagements", label: "מאורסים/נשואים" },
+  { href: "/weddings", label: "חתונות" },
   { href: "/reminders", label: "תזכורות" },
 ];
 
@@ -39,7 +40,7 @@ export function AppHeader({ name }: { name: string }) {
         )}
       >
         <Wordmark href="/dashboard" />
-        <nav className={cn("absolute inset-x-3 top-full mt-2 flex-col border-2 border-ink bg-paper p-2 md:static md:mt-0 md:flex md:flex-row md:border-0 md:p-0", open ? "flex" : "hidden")}>
+        <nav className={cn("absolute inset-x-3 top-full mt-2 flex-col border-2 border-ink bg-paper p-2 lg:static lg:mt-0 lg:flex lg:flex-row lg:border-0 lg:p-0", open ? "flex" : "hidden")}>
           {NAV.map((item) => {
             const active = pathname.startsWith(item.href);
             return (
@@ -63,7 +64,7 @@ export function AppHeader({ name }: { name: string }) {
           </form>
           <button
             type="button"
-            className="px-3 py-2 text-xl md:hidden"
+            className="px-3 py-2 text-xl lg:hidden"
             aria-label="תפריט"
             aria-expanded={open}
             onClick={() => setOpen(!open)}
