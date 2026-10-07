@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { fullName, oppositeSide, SIDE_LABELS } from "@/lib/candidates";
 import { routes, withQuery } from "@/lib/routes";
-import { candidateFiltersSchema } from "@/lib/validation/candidate";
+import { candidateFiltersSchema, filterParams } from "@/lib/validation/candidate";
 import { requireMatchmakerId } from "@/server/auth/session";
 import { getCandidateSummary, listCandidates } from "@/server/services/candidate-service";
 import { introductionsOf } from "@/server/services/introduction-service";
@@ -35,13 +35,14 @@ export default async function MatchPage({ params, searchParams }: Props) {
   const filters = candidateFiltersSchema.parse(await searchParams);
   const matchmakerId = await requireMatchmakerId();
   const partnerSide = oppositeSide(candidate.side);
-  const [{ items, total, pageCount }, introductions] = await Promise.all([
-    listCandidates(matchmakerId, partnerSide, filters),
-    introductionsOf(matchmakerId, candidate.id, candidate.side),
-  ]);
+  const introductions = await introductionsOf(matchmakerId, candidate.id, candidate.side);
   const byPartner = new Map(introductions.map((introduction) => [introduction.partner.id, introduction]));
+  const { items, total, pageCount } = await listCandidates(matchmakerId, partnerSide, filters, {
+    excludeIds: filters.notProposed ? [...byPartner.keys()] : [],
+    freeOnly: true,
+  });
   const partners = SIDE_LABELS[partnerSide];
-  const hrefFor = (page: number) => withQuery(routes.match(candidate.id), { q: filters.q, status: filters.status, page });
+  const hrefFor = (page: number) => withQuery(routes.match(candidate.id), { ...filterParams(filters), page });
 
   return (
     <>
@@ -54,7 +55,7 @@ export default async function MatchPage({ params, searchParams }: Props) {
           </LinkButton>
         }
       />
-      <CandidateFilters side={partnerSide} filters={filters} />
+      <CandidateFilters side={partnerSide} filters={filters} clearHref={routes.match(candidate.id)} canHideProposed />
 
       {items.length === 0 ? (
         <EmptyState title={`לא נמצאו ${partners.many}`}>

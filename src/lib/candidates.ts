@@ -30,8 +30,10 @@ export const CANDIDATE_STATUSES = Object.values(CandidateStatus);
 // Statuses the matchmaker sets by hand; engaged and married follow the candidate's engagement
 export const MANUAL_STATUSES = [CandidateStatus.AVAILABLE, CandidateStatus.IN_PROCESS, CandidateStatus.PAUSED] as const;
 
+export const TAKEN_STATUSES = [CandidateStatus.ENGAGED, CandidateStatus.MARRIED] as const;
+
 export function isTaken(status: CandidateStatus): boolean {
-  return status === CandidateStatus.ENGAGED || status === CandidateStatus.MARRIED;
+  return (TAKEN_STATUSES as readonly CandidateStatus[]).includes(status);
 }
 
 export function statusLabel(status: CandidateStatus, side: Side): string {
@@ -48,6 +50,15 @@ export function ageFrom(birthDate: Date | null | undefined, now = new Date()): n
   const hadBirthday =
     now.getMonth() > birthDate.getMonth() || (now.getMonth() === birthDate.getMonth() && now.getDate() >= birthDate.getDate());
   return hadBirthday ? age : age - 1;
+}
+
+// Birth dates of everyone aged between minAge and maxAge (inclusive) on the given day
+export function birthDateRange(minAge: number | undefined, maxAge: number | undefined, now = new Date()) {
+  const yearsAgo = (years: number) => new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
+  return {
+    lte: minAge === undefined ? undefined : yearsAgo(minAge),
+    gt: maxAge === undefined ? undefined : yearsAgo(maxAge + 1),
+  };
 }
 
 export function ageLabel(candidate: { side: Side; birthDate: Date | null }): string | null {
