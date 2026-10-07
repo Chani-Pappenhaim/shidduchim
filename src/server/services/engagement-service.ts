@@ -203,6 +203,16 @@ export async function listUpcomingWeddings(matchmakerId: string, take: number) {
   return asWeddings(items);
 }
 
+// Weddings of the matchmakers' own matches falling on any of the given days, across all matchmakers
+export async function listWeddingsOn(days: Date[]) {
+  const items = await db.engagement.findMany({
+    where: { byMatchmaker: true, weddingDate: { in: days } },
+    select: { ...engagementSelect, matchmakerId: true },
+    orderBy: { weddingDate: "asc" },
+  });
+  return items as (WeddingItem & { matchmakerId: string })[];
+}
+
 export function engagementsThisYear(matchmakerId: string) {
   const startOfYear = new Date(Date.UTC(new Date().getFullYear(), 0, 1));
   return db.engagement.count({ where: { matchmakerId, byMatchmaker: true, engagedAt: { gte: startOfYear } } });

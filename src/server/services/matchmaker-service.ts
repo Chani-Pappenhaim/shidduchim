@@ -40,3 +40,7 @@ export function getMatchmakerProfile(id: string) {
 export function updateMatchmakerProfile(id: string, input: ProfileInput) {
   return db.matchmaker.update({ where: { id }, data: input, select: { id: true } });
 }
+
+export function listMatchmakerContacts(ids: string[]) {
+  return db.matchmaker.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, email: true } });
+}
