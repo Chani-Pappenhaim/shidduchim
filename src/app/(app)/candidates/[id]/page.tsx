@@ -7,6 +7,7 @@ import { CandidateAvatar } from "@/components/candidates/candidate-avatar";
 import { CandidateDetails } from "@/components/candidates/candidate-details";
 import { CandidateFiles } from "@/components/candidates/candidate-files";
 import { CandidateNotes } from "@/components/candidates/candidate-notes";
+import { CandidateEngagement } from "@/components/engagements/candidate-engagement";
 import { StatusBadge } from "@/components/candidates/status-badge";
 import { CandidateIntroductions } from "@/components/introductions/candidate-introductions";
 import { ReminderForm } from "@/components/reminders/reminder-form";
@@ -18,6 +19,7 @@ import { fullName, SIDE_LABELS } from "@/lib/candidates";
 import { routes } from "@/lib/routes";
 import { requireMatchmakerId } from "@/server/auth/session";
 import { getCandidate } from "@/server/services/candidate-service";
+import { engagementOf } from "@/server/services/engagement-service";
 import { introductionsOf } from "@/server/services/introduction-service";
 import { listOpenReminders } from "@/server/services/reminder-service";
 
@@ -46,9 +48,10 @@ function TextBlock({ title, text }: { title: string; text: string | null }) {
 
 export default async function CandidatePage({ params }: Props) {
   const candidate = await loadCandidate((await params).id);
-  const [introductions, reminders] = await Promise.all([
+  const [introductions, reminders, engagement] = await Promise.all([
     introductionsOf(candidate.matchmakerId, candidate.id, candidate.side),
     listOpenReminders(candidate.matchmakerId, { candidateId: candidate.id }),
+    engagementOf(candidate.matchmakerId, candidate.id),
   ]);
   const photo = candidate.files.find((f) => f.kind === "PHOTO");
   const labels = SIDE_LABELS[candidate.side];
@@ -64,12 +67,15 @@ export default async function CandidatePage({ params }: Props) {
           <CandidateAvatar candidate={candidate} photoId={photo?.id} className="relative border-2 border-ink" />
         </div>
         <div className="flex flex-col gap-2">
-          <LinkButton href={routes.match(candidate.id)} arrow>
-            מציאת התאמה
-          </LinkButton>
+          {!engagement && (
+            <LinkButton href={routes.match(candidate.id)} arrow>
+              מציאת התאמה
+            </LinkButton>
+          )}
           <LinkButton href={routes.editCandidate(candidate.id)} variant="secondary" arrow>
             עריכת כרטיס
           </LinkButton>
+          <CandidateEngagement candidateId={candidate.id} side={candidate.side} engagement={engagement} />
         </div>
         <Section title="קבצים">
           <CandidateFiles candidateId={candidate.id} files={candidate.files} />

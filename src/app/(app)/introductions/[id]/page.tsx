@@ -11,6 +11,7 @@ import { Meetings } from "@/components/introductions/meetings";
 import { StatusControl } from "@/components/introductions/status-control";
 import { ReminderForm } from "@/components/reminders/reminder-form";
 import { ReminderList } from "@/components/reminders/reminder-list";
+import { LinkButton } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { Section } from "@/components/ui/section";
 import { ageLabel, fullName } from "@/lib/candidates";
@@ -77,6 +78,11 @@ export default async function IntroductionPage({ params }: Props) {
           <Partner candidate={introduction.female} block="bg-coral" />
         </div>
         <StatusControl introductionId={introduction.id} status={introduction.status} />
+        {introduction.engagement && (
+          <LinkButton href={routes.engagement(introduction.engagement.id)} variant="secondary" size="sm" arrow className="self-start">
+            {introduction.engagement.weddingDate ? "לפרטי החתונה" : "להוספת תאריך חתונה"}
+          </LinkButton>
+        )}
       </header>
 
       <div className="grid gap-12 lg:grid-cols-[1fr_320px]">
