@@ -4,7 +4,7 @@ import { IntroductionEventType, IntroductionStatus, Side } from "@/generated/pri
 import { isTaken } from "@/lib/candidates";
 import { coupleOf, OPEN_INTRODUCTION_STATUSES } from "@/lib/introductions";
 import type { IntroductionDetailsInput, IntroductionFilters, MeetingInput } from "@/lib/validation/introduction";
-import { db } from "@/server/db";
+import { db, transaction } from "@/server/db";
 import { candidateSummarySelect } from "./candidate-select";
 import { syncCandidateStatuses } from "./candidate-status";
 import { recordIntroductionEngagement, removeIntroductionEngagement } from "./engagement-service";
@@ -132,7 +132,7 @@ export async function updateIntroductionDetails(matchmakerId: string, input: Int
 // Moves an introduction to a new status and keeps both candidates' statuses in line;
 // an engagement records the couple and closes their other open introductions
 export function changeIntroductionStatus(matchmakerId: string, introductionId: string, status: IntroductionStatus) {
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const introduction = await assertIntroductionOwner(tx, matchmakerId, introductionId);
     if (introduction.status === status) return;
     const engaged = status === IntroductionStatus.ENGAGED;
@@ -149,7 +149,7 @@ export function changeIntroductionStatus(matchmakerId: string, introductionId: s
 // Records a meeting; a first meeting moves an early-stage introduction to "meeting"
 export function addMeeting(matchmakerId: string, input: MeetingInput) {
   const { introductionId, ...meeting } = input;
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const introduction = await assertIntroductionOwner(tx, matchmakerId, introductionId);
     await tx.meeting.create({ data: { introductionId, ...meeting } });
     await tx.introductionEvent.create({ data: { introductionId, type: IntroductionEventType.MEETING_ADDED, message: meeting.location } });
@@ -166,7 +166,7 @@ export function deleteMeeting(matchmakerId: string, meetingId: string) {
 }
 
 export function deleteIntroduction(matchmakerId: string, introductionId: string) {
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const introduction = await assertIntroductionOwner(tx, matchmakerId, introductionId);
     await removeIntroductionEngagement(tx, introductionId);
     await tx.introduction.delete({ where: { id: introductionId } });

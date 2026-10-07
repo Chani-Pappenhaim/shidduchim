@@ -46,3 +46,9 @@ next-env.d.ts
 
 # uploaded files (local storage driver)
 /storage/
+
+# cloudflare
+/.open-next/
+/.wrangler/
+.dev.vars*
+!.dev.vars.example

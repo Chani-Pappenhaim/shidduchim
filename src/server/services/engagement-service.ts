@@ -5,7 +5,7 @@ import { fullName } from "@/lib/candidates";
 import type { CoupleState } from "@/lib/engagements";
 import { todayDate } from "@/lib/format";
 import type { EngagementDetailsInput, EngagementFilters, NewEngagementInput } from "@/lib/validation/engagement";
-import { db } from "@/server/db";
+import { db, transaction } from "@/server/db";
 import { candidateSummarySelect } from "./candidate-select";
 import { syncCandidateStatuses } from "./candidate-status";
 import { closeOpenIntroductions, setIntroductionStatus } from "./introduction-transitions";
@@ -89,7 +89,7 @@ export function engagementOfIntroduction(matchmakerId: string, introductionId: s
 // Records that one of the matchmaker's candidates got engaged to someone outside the database
 export function createEngagement(matchmakerId: string, input: NewEngagementInput) {
   const { candidateId, ...data } = input;
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const candidate = await tx.candidate.findFirst({ where: { id: candidateId, matchmakerId }, select: { id: true, side: true } });
     if (!candidate) throw new NotFoundError();
     if (await tx.engagement.findFirst({ where: partnerOf(candidate.id), select: { id: true } })) {
@@ -142,7 +142,7 @@ function stripUndefined<T extends object>(data: T): Partial<T> {
 
 export function updateEngagement(matchmakerId: string, input: EngagementDetailsInput) {
   const { engagementId, partnerName, ...data } = input;
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const found = await tx.engagement.findFirst({ where: { id: engagementId, matchmakerId }, select: { maleId: true, femaleId: true } });
     if (!found) throw new NotFoundError();
     const hasOutsidePartner = !found.maleId || !found.femaleId;
@@ -158,7 +158,7 @@ export function updateEngagement(matchmakerId: string, input: EngagementDetailsI
 
 // Removes a broken-off engagement; the introduction it came from is marked as declined
 export function cancelEngagement(matchmakerId: string, engagementId: string) {
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const found = await tx.engagement.findFirst({
       where: { id: engagementId, matchmakerId },
       select: { maleId: true, femaleId: true, introductionId: true },

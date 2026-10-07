@@ -1,6 +1,6 @@
 import "server-only";
-import path from "node:path";
-import { LocalFileStorage } from "./local-storage";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { KvFileStorage } from "./kv-storage";
 import type { FileStorage } from "./types";
 
-export const storage: FileStorage = new LocalFileStorage(path.join(process.cwd(), "storage"));
+export const storage: FileStorage = new KvFileStorage(() => getCloudflareContext().env.FILES);

@@ -16,7 +16,7 @@ export default defineConfig({
       {
         // Service tests against the local database (run one file at a time, see the test:db script); each file creates and removes its own matchmaker
         extends: true,
-        test: { name: "db", include: ["src/**/*.db.test.ts"], setupFiles: ["dotenv/config"], testTimeout: 30_000, hookTimeout: 60_000 },
+        test: { name: "db", include: ["src/**/*.db.test.ts"], setupFiles: ["dotenv/config", "./test/cloudflare-context.ts"], testTimeout: 30_000, hookTimeout: 60_000 },
       },
     ],
   },
