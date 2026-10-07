@@ -45,3 +45,10 @@ export const optionalInt = (min: number, max: number) =>
     .optional()
     .transform((v) => (v ? Number(v) : undefined))
     .pipe(z.number().int("מספר שלם בלבד").min(min, "ערך נמוך מדי").max(max, "ערך גבוה מדי").optional());
+
+type BlanksAsNull<T> = { [K in keyof T]: undefined extends T[K] ? Exclude<T[K], undefined> | null : T[K] };
+
+// Blank optional fields come out of the schemas as undefined; updates need null to clear the stored value
+export function blanksToNull<T extends Record<string, unknown>>(input: T): BlanksAsNull<T> {
+  return Object.fromEntries(Object.entries(input).map(([key, value]) => [key, value === undefined ? null : value])) as BlanksAsNull<T>;
+}
