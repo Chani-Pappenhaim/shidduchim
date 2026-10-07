@@ -17,8 +17,17 @@ export async function registerMatchmaker(input: RegisterInput) {
 // Returns the matchmaker id when the credentials match, otherwise null
 export async function authenticateMatchmaker(email: string, password: string): Promise<string | null> {
   const matchmaker = await db.matchmaker.findUnique({ where: { email }, select: { id: true, passwordHash: true } });
-  if (!matchmaker || !(await verifyPassword(password, matchmaker.passwordHash))) return null;
-  return matchmaker.id;
+  const valid = await verifyPassword(password, matchmaker?.passwordHash);
+  return valid && matchmaker ? matchmaker.id : null;
+}
+
+export async function getSessionVersion(id: string): Promise<number | null> {
+  const matchmaker = await db.matchmaker.findUnique({ where: { id }, select: { sessionVersion: true } });
+  return matchmaker?.sessionVersion ?? null;
+}
+
+export async function revokeSessions(id: string) {
+  await db.matchmaker.update({ where: { id }, data: { sessionVersion: { increment: 1 } } });
 }
 
 export function getMatchmakerProfile(id: string) {
