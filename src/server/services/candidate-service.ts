@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { Side } from "@/generated/prisma/enums";
 import { isTaken } from "@/lib/candidates";
 import type { CandidateFilters, CandidateInput } from "@/lib/validation/candidate";
+import { blanksToNull } from "@/lib/validation/fields";
 import { db } from "@/server/db";
 import { removeStoredFiles } from "./candidate-file-service";
 import { candidateSummarySelect } from "./candidate-select";
@@ -72,7 +73,8 @@ export async function updateCandidate(matchmakerId: string, id: string, input: C
   const current = await db.candidate.findFirst({ where: { id, matchmakerId }, select: { status: true } });
   if (!current) throw new NotFoundError();
   const { status, ...details } = input;
-  const data = isTaken(current.status) ? details : { ...details, status };
+  const cleared = blanksToNull(details);
+  const data = isTaken(current.status) || !status ? cleared : { ...cleared, status };
   return db.candidate.update({ where: { id }, data, select: { id: true, side: true } });
 }
 

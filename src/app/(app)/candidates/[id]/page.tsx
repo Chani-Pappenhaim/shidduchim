@@ -6,6 +6,7 @@ import { deleteCandidateAction } from "@/actions/candidates";
 import { CandidateAvatar } from "@/components/candidates/candidate-avatar";
 import { CandidateDetails } from "@/components/candidates/candidate-details";
 import { CandidateFiles } from "@/components/candidates/candidate-files";
+import { CandidateInvite } from "@/components/candidates/candidate-invite";
 import { CandidateNotes } from "@/components/candidates/candidate-notes";
 import { CandidateEngagement } from "@/components/engagements/candidate-engagement";
 import { StatusBadge } from "@/components/candidates/status-badge";
@@ -21,6 +22,7 @@ import { requireMatchmakerId } from "@/server/auth/session";
 import { getCandidate } from "@/server/services/candidate-service";
 import { engagementOf } from "@/server/services/engagement-service";
 import { introductionsOf } from "@/server/services/introduction-service";
+import { getInviteStatus } from "@/server/services/portal-service";
 import { listOpenReminders } from "@/server/services/reminder-service";
 
 type Props = { params: Promise<{ id: string }> };
@@ -48,10 +50,11 @@ function TextBlock({ title, text }: { title: string; text: string | null }) {
 
 export default async function CandidatePage({ params }: Props) {
   const candidate = await loadCandidate((await params).id);
-  const [introductions, reminders, engagement] = await Promise.all([
+  const [introductions, reminders, engagement, invite] = await Promise.all([
     introductionsOf(candidate.matchmakerId, candidate.id, candidate.side),
     listOpenReminders(candidate.matchmakerId, { candidateId: candidate.id }),
     engagementOf(candidate.matchmakerId, candidate.id),
+    getInviteStatus(candidate.matchmakerId, candidate.id),
   ]);
   const photo = candidate.files.find((f) => f.kind === "PHOTO");
   const labels = SIDE_LABELS[candidate.side];
@@ -79,6 +82,9 @@ export default async function CandidatePage({ params }: Props) {
         </div>
         <Section title="קבצים">
           <CandidateFiles candidateId={candidate.id} files={candidate.files} />
+        </Section>
+        <Section title="מילוי עצמי">
+          <CandidateInvite candidateId={candidate.id} hasEmail={!!candidate.email} invite={invite} />
         </Section>
         <form action={deleteCandidateAction.bind(null, candidate.id)} className="mt-auto">
           <ConfirmSubmit
