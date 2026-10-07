@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CandidateStatus, Side } from "@/generated/prisma/enums";
-import { ageFrom, initials, isTaken, statusLabel } from "./candidates";
+import { ageFrom, birthDateRange, initials, isTaken, statusLabel } from "./candidates";
 import { coupleOf } from "./introductions";
 import { reminderTiming } from "./reminders";
 import { withQuery } from "./routes";
@@ -11,6 +11,18 @@ describe("candidates", () => {
     expect(ageFrom(birth, new Date(2026, 5, 14))).toBe(25);
     expect(ageFrom(birth, new Date(2026, 5, 15))).toBe(26);
     expect(ageFrom(null)).toBeNull();
+  });
+
+  it("turns an age range into birth dates that agree with ageFrom", () => {
+    const now = new Date(2026, 5, 15);
+    const { lte, gt } = birthDateRange(20, 25, now);
+    const inRange = (birth: Date) => birth <= lte! && birth > gt!;
+    expect(inRange(new Date(2006, 5, 15))).toBe(true);
+    expect(inRange(new Date(2006, 5, 16))).toBe(false);
+    expect(inRange(new Date(2000, 5, 16))).toBe(true);
+    expect(inRange(new Date(2000, 5, 15))).toBe(false);
+    expect(ageFrom(new Date(2000, 5, 16), now)).toBe(25);
+    expect(birthDateRange(undefined, undefined, now)).toEqual({ lte: undefined, gt: undefined });
   });
 
   it("labels statuses by side", () => {

@@ -1,7 +1,7 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Side } from "@/generated/prisma/enums";
-import { isTaken } from "@/lib/candidates";
+import { birthDateRange, isTaken, TAKEN_STATUSES } from "@/lib/candidates";
 import type { CandidateFilters, CandidateInput } from "@/lib/validation/candidate";
 import { blanksToNull } from "@/lib/validation/fields";
 import { db } from "@/server/db";
@@ -26,8 +26,39 @@ function searchWhere(q: string | undefined): Prisma.CandidateWhereInput {
   };
 }
 
-export async function listCandidates(matchmakerId: string, side: Side, filters: CandidateFilters) {
-  const where: Prisma.CandidateWhereInput = { matchmakerId, side, status: filters.status, ...searchWhere(filters.q) };
+const containsText = (value: string | undefined) => (value ? { contains: value, mode: "insensitive" as const } : undefined);
+
+const between = (min: number | undefined, max: number | undefined) =>
+  min === undefined && max === undefined ? undefined : { gte: min, lte: max };
+
+// Candidates without a birth date or height drop out once that filter is used
+function filtersWhere(filters: CandidateFilters, now: Date): Prisma.CandidateWhereInput {
+  const ageSet = filters.minAge !== undefined || filters.maxAge !== undefined;
+  return {
+    status: filters.status,
+    birthDate: ageSet ? birthDateRange(filters.minAge, filters.maxAge, now) : undefined,
+    heightCm: between(filters.minHeight, filters.maxHeight),
+    city: containsText(filters.city),
+    community: containsText(filters.community),
+    occupation: containsText(filters.occupation),
+    ...searchWhere(filters.q),
+  };
+}
+
+export async function listCandidates(
+  matchmakerId: string,
+  side: Side,
+  filters: CandidateFilters,
+  { excludeIds = [], freeOnly = false, now = new Date() }: { excludeIds?: string[]; freeOnly?: boolean; now?: Date } = {},
+) {
+  const where: Prisma.CandidateWhereInput = {
+    matchmakerId,
+    side,
+    id: excludeIds.length ? { notIn: excludeIds } : undefined,
+    ...filtersWhere(filters, now),
+  };
+  // Engaged and married candidates stay hidden unless their status is asked for explicitly
+  if (freeOnly && !filters.status) where.status = { notIn: [...TAKEN_STATUSES] };
   const [items, total] = await db.$transaction([
     db.candidate.findMany({
       where,

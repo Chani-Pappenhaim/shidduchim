@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SIDE_LABELS, sideFromSlug } from "@/lib/candidates";
 import { routes, withQuery } from "@/lib/routes";
-import { candidateFiltersSchema } from "@/lib/validation/candidate";
+import { candidateFiltersSchema, filterParams, hasFilters } from "@/lib/validation/candidate";
 import { requireMatchmakerId } from "@/server/auth/session";
 import { countCandidatesBySide, listCandidates } from "@/server/services/candidate-service";
 
@@ -27,8 +27,8 @@ export default async function CandidatesPage({ searchParams }: { searchParams: S
   ]);
 
   const labels = SIDE_LABELS[side];
-  const isFiltered = Boolean(filters.q || filters.status);
-  const hrefFor = (page: number) => withQuery("/candidates", { side: labels.slug, q: filters.q, status: filters.status, page });
+  const isFiltered = hasFilters(filters);
+  const hrefFor = (page: number) => withQuery("/candidates", { side: labels.slug, ...filterParams(filters), page });
 
   return (
     <>
@@ -42,7 +42,7 @@ export default async function CandidatesPage({ searchParams }: { searchParams: S
         }
       />
       <SideTabs active={side} counts={counts} />
-      <CandidateFilters side={side} filters={filters} />
+      <CandidateFilters side={side} filters={filters} clearHref={routes.candidates(side)} />
 
       {items.length === 0 ? (
         <EmptyState title={isFiltered ? "לא נמצאו תוצאות" : `עוד אין ${labels.many}`}>
