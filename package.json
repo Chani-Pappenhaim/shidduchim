@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --project unit",
-    "test:db": "vitest run --project db",
-    "test:all": "vitest run",
+    "test:db": "vitest run --project db --no-file-parallelism",
+    "test:all": "vitest run --no-file-parallelism",
     "db:seed": "prisma db seed"
   },
   "dependencies": {

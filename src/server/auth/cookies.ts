@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 
-export { PORTAL_COOKIE, SESSION_COOKIE } from "./cookie-names";
+export { OAUTH_STATE_COOKIE, PORTAL_COOKIE, SESSION_COOKIE } from "./cookie-names";
 
 // Stores a signed token in an httpOnly cookie
 export async function setAuthCookie(name: string, token: string, maxAgeSeconds: number) {
