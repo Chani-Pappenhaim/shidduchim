@@ -3,7 +3,6 @@
 import { useActionState, type ReactNode } from "react";
 import { saveCandidateAction } from "@/actions/candidates";
 import type { Side } from "@/generated/prisma/enums";
-import type { Candidate, CandidateFile } from "@/generated/prisma/client";
 import { isTaken, MANUAL_STATUSES, SIDE_LABELS, statusLabel } from "@/lib/candidates";
 import { FILE_RULES, formatBytes } from "@/lib/files";
 import { emptyFormState, fieldValue } from "@/lib/form-state";
@@ -12,10 +11,11 @@ import { LinkButton } from "@/components/ui/button";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/field";
 import { FormMessage } from "@/components/ui/form-message";
 import { SubmitButton } from "@/components/ui/submit-button";
+import type { EditableCandidate } from "@/server/services/candidate-service";
 
 type Props = {
   side: Side;
-  candidate?: Candidate & { files: CandidateFile[] };
+  candidate?: EditableCandidate;
   cancelHref: string;
 };
 
@@ -31,7 +31,7 @@ function Fieldset({ legend, children }: { legend: string; children: ReactNode })
 export function CandidateForm({ side, candidate, cancelHref }: Props) {
   const [state, action] = useActionState(saveCandidateAction, emptyFormState);
   const errors = state.fieldErrors;
-  const value = (name: keyof Candidate) => fieldValue(state, name, candidate?.[name] as string | number | null | undefined);
+  const value = (name: keyof EditableCandidate) => fieldValue(state, name, candidate?.[name] as string | number | null | undefined);
   const currentFile = (kind: keyof typeof FILE_RULES) => candidate?.files.find((f) => f.kind === kind);
   const fileHint = (kind: keyof typeof FILE_RULES) => {
     const current = currentFile(kind);
