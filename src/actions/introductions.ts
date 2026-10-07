@@ -11,6 +11,7 @@ import {
   proposeSchema,
 } from "@/lib/validation/introduction";
 import { requireMatchmakerId } from "@/server/auth/session";
+import { EngagementRuleError } from "@/server/services/engagement-service";
 import {
   addMeeting,
   changeIntroductionStatus,
@@ -49,12 +50,18 @@ export async function updateIntroductionDetailsAction(_: FormState, formData: Fo
   return { success: "הפרטים נשמרו" };
 }
 
-export async function changeIntroductionStatusAction(formData: FormData) {
+export async function changeIntroductionStatusAction(_: FormState, formData: FormData): Promise<FormState> {
   const matchmakerId = await requireMatchmakerId();
-  const parsed = introductionStatusSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return;
-  await changeIntroductionStatus(matchmakerId, parsed.data.introductionId, parsed.data.status);
+  const parsed = parseForm(introductionStatusSchema, formData);
+  if (!parsed.ok) return parsed.state;
+  try {
+    await changeIntroductionStatus(matchmakerId, parsed.data.introductionId, parsed.data.status);
+  } catch (error) {
+    if (error instanceof EngagementRuleError) return { error: error.message };
+    throw error;
+  }
   revalidateMatchmaking();
+  return {};
 }
 
 export async function addMeetingAction(_: FormState, formData: FormData): Promise<FormState> {
