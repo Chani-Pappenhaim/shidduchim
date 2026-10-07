@@ -56,3 +56,16 @@ export function setReminderDone(matchmakerId: string, reminderId: string, done: 
 export function deleteReminder(matchmakerId: string, reminderId: string) {
   return db.reminder.deleteMany({ where: { id: reminderId, matchmakerId } });
 }
+
+// Open reminders of every matchmaker that fell due and were not yet sent in a digest
+export function listRemindersToNotify(until: Date) {
+  return db.reminder.findMany({
+    where: { doneAt: null, notifiedAt: null, dueAt: { lte: until } },
+    select: { ...reminderSelect, matchmakerId: true },
+    orderBy: { dueAt: "asc" },
+  });
+}
+
+export function markRemindersNotified(ids: string[]) {
+  return db.reminder.updateMany({ where: { id: { in: ids } }, data: { notifiedAt: new Date() } });
+}
