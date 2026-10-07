@@ -3,7 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // The engaged couples page used to be called "successes"
   async redirects() {
-    return [{ source: "/successes", destination: "/engagements", permanent: true }];
+    return [
+      { source: "/successes", destination: "/engagements", permanent: true },
+      // The workspace is the home page; signed-out visitors continue on to the login page
+      { source: "/", destination: "/dashboard", permanent: false },
+    ];
   },
   experimental: {
     // Candidate forms carry a photo and a resume file
