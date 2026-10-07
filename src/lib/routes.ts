@@ -1,4 +1,5 @@
 import type { Side } from "@/generated/prisma/enums";
+import type { ProposalRecipient } from "./proposal-email";
 import { SIDE_LABELS } from "./candidates";
 
 // Appends the non-empty params to a path, e.g. for filters and paging links
@@ -18,6 +19,7 @@ export const routes = {
   match: (candidateId: string) => `/candidates/${candidateId}/match`,
   introductions: "/introductions",
   introduction: (id: string) => `/introductions/${id}`,
+  proposalEmail: (introductionId: string, recipient: ProposalRecipient) => `/introductions/${introductionId}/email?to=${recipient}`,
   engagements: "/engagements",
   engagement: (id: string) => `/engagements/${id}`,
   newEngagement: (candidateId: string) => `/engagements/new?candidateId=${candidateId}`,

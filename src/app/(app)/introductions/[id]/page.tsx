@@ -78,11 +78,19 @@ export default async function IntroductionPage({ params }: Props) {
           <Partner candidate={introduction.female} block="bg-coral" />
         </div>
         <StatusControl introductionId={introduction.id} status={introduction.status} />
-        {introduction.engagement && (
-          <LinkButton href={routes.engagement(introduction.engagement.id)} variant="secondary" size="sm" arrow className="self-start">
-            {introduction.engagement.weddingDate ? "לפרטי החתונה" : "להוספת תאריך חתונה"}
+        <div className="flex flex-wrap gap-2">
+          {introduction.engagement && (
+            <LinkButton href={routes.engagement(introduction.engagement.id)} variant="secondary" size="sm" arrow>
+              {introduction.engagement.weddingDate ? "לפרטי החתונה" : "להוספת תאריך חתונה"}
+            </LinkButton>
+          )}
+          <LinkButton href={routes.proposalEmail(introduction.id, "male")} variant="secondary" size="sm">
+            ✉ מייל ל{introduction.male.firstName}
           </LinkButton>
-        )}
+          <LinkButton href={routes.proposalEmail(introduction.id, "female")} variant="secondary" size="sm">
+            ✉ מייל ל{introduction.female.firstName}
+          </LinkButton>
+        </div>
       </header>
 
       <div className="grid gap-12 lg:grid-cols-[1fr_320px]">
