@@ -22,9 +22,17 @@ const STATUS_LABELS: Record<CandidateStatus, Record<Side, string>> = {
   IN_PROCESS: { MALE: "בתהליך", FEMALE: "בתהליך" },
   PAUSED: { MALE: "בהפסקה", FEMALE: "בהפסקה" },
   ENGAGED: { MALE: "מאורס", FEMALE: "מאורסת" },
+  MARRIED: { MALE: "נשוי", FEMALE: "נשואה" },
 };
 
 export const CANDIDATE_STATUSES = Object.values(CandidateStatus);
+
+// Statuses the matchmaker sets by hand; engaged and married follow the candidate's engagement
+export const MANUAL_STATUSES = [CandidateStatus.AVAILABLE, CandidateStatus.IN_PROCESS, CandidateStatus.PAUSED] as const;
+
+export function isTaken(status: CandidateStatus): boolean {
+  return status === CandidateStatus.ENGAGED || status === CandidateStatus.MARRIED;
+}
 
 export function statusLabel(status: CandidateStatus, side: Side): string {
   return STATUS_LABELS[status][side];

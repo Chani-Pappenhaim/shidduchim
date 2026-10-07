@@ -4,7 +4,7 @@ import { useActionState, type ReactNode } from "react";
 import { saveCandidateAction } from "@/actions/candidates";
 import type { Side } from "@/generated/prisma/enums";
 import type { Candidate, CandidateFile } from "@/generated/prisma/client";
-import { CANDIDATE_STATUSES, SIDE_LABELS, statusLabel } from "@/lib/candidates";
+import { isTaken, MANUAL_STATUSES, SIDE_LABELS, statusLabel } from "@/lib/candidates";
 import { FILE_RULES, formatBytes } from "@/lib/files";
 import { emptyFormState, fieldValue } from "@/lib/form-state";
 import { toDateInputValue } from "@/lib/format";
@@ -59,13 +59,23 @@ export function CandidateForm({ side, candidate, cancelHref }: Props) {
         <TextField label="עיר" name="city" defaultValue={value("city")} error={errors?.city} />
         <TextField label="קהילה / חוג" name="community" defaultValue={value("community")} error={errors?.community} />
         <TextField label="עיסוק / מקום לימודים" name="occupation" defaultValue={value("occupation")} error={errors?.occupation} />
-        <SelectField label="סטטוס" name="status" defaultValue={value("status") || "AVAILABLE"} error={errors?.status}>
-          {CANDIDATE_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {statusLabel(status, side)}
-            </option>
-          ))}
-        </SelectField>
+        {candidate && isTaken(candidate.status) ? (
+          <TextField
+            label="סטטוס"
+            name="statusShown"
+            disabled
+            value={statusLabel(candidate.status, side)}
+            hint="נקבע לפי האירוסין בכרטיס"
+          />
+        ) : (
+          <SelectField label="סטטוס" name="status" defaultValue={value("status") || "AVAILABLE"} error={errors?.status}>
+            {MANUAL_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {statusLabel(status, side)}
+              </option>
+            ))}
+          </SelectField>
+        )}
       </Fieldset>
 
       <Fieldset legend="יצירת קשר">

@@ -1,10 +1,15 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Side } from "@/generated/prisma/enums";
+import { isTaken } from "@/lib/candidates";
 import type { CandidateFilters, CandidateInput } from "@/lib/validation/candidate";
 import { db } from "@/server/db";
 import { removeStoredFiles } from "./candidate-file-service";
-import { assertCandidateOwner } from "./ownership";
+import { candidateSummarySelect } from "./candidate-select";
+import { releaseCandidateEngagement } from "./engagement-service";
+import { assertCandidateOwner, NotFoundError } from "./ownership";
+
+export type { CandidateSummary } from "./candidate-select";
 
 export const CANDIDATES_PAGE_SIZE = 24;
 
@@ -19,21 +24,6 @@ function searchWhere(q: string | undefined): Prisma.CandidateWhereInput {
     })),
   };
 }
-
-export const candidateSummarySelect = {
-  id: true,
-  side: true,
-  firstName: true,
-  lastName: true,
-  birthDate: true,
-  city: true,
-  community: true,
-  occupation: true,
-  status: true,
-  files: { where: { kind: "PHOTO" }, select: { id: true } },
-} satisfies Prisma.CandidateSelect;
-
-export type CandidateSummary = Prisma.CandidateGetPayload<{ select: typeof candidateSummarySelect }>;
 
 export async function listCandidates(matchmakerId: string, side: Side, filters: CandidateFilters) {
   const where: Prisma.CandidateWhereInput = { matchmakerId, side, status: filters.status, ...searchWhere(filters.q) };
@@ -77,14 +67,21 @@ export function createCandidate(matchmakerId: string, input: CandidateInput) {
   return db.candidate.create({ data: { ...input, matchmakerId }, select: { id: true } });
 }
 
+// Engaged and married statuses follow the engagement, so a form cannot overwrite them
 export async function updateCandidate(matchmakerId: string, id: string, input: CandidateInput) {
-  await assertCandidateOwner(matchmakerId, id);
-  return db.candidate.update({ where: { id }, data: input, select: { id: true, side: true } });
+  const current = await db.candidate.findFirst({ where: { id, matchmakerId }, select: { status: true } });
+  if (!current) throw new NotFoundError();
+  const { status, ...details } = input;
+  const data = isTaken(current.status) ? details : { ...details, status };
+  return db.candidate.update({ where: { id }, data, select: { id: true, side: true } });
 }
 
 export async function deleteCandidate(matchmakerId: string, id: string) {
   await assertCandidateOwner(matchmakerId, id);
-  const deleted = await db.candidate.delete({ where: { id }, select: { side: true, files: { select: { storageKey: true } } } });
+  const deleted = await db.$transaction(async (tx) => {
+    await releaseCandidateEngagement(tx, id);
+    return tx.candidate.delete({ where: { id }, select: { side: true, files: { select: { storageKey: true } } } });
+  });
   await removeStoredFiles(deleted.files.map((f) => f.storageKey));
   return deleted;
 }

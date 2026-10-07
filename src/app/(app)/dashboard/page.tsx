@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { WeddingRow } from "@/components/engagements/wedding-row";
 import { CoupleRow } from "@/components/introductions/couple-row";
 import { ReminderForm } from "@/components/reminders/reminder-form";
 import { ReminderList } from "@/components/reminders/reminder-list";
@@ -9,18 +10,19 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { Side } from "@/generated/prisma/enums";
 import { cn } from "@/lib/cn";
-import { formatDate } from "@/lib/format";
-import { todayAsDueDate } from "@/lib/reminders";
+import { formatDate, todayDate } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import { requireMatchmakerId } from "@/server/auth/session";
 import { countCandidatesBySide } from "@/server/services/candidate-service";
-import { introductionStats, listActiveIntroductions } from "@/server/services/introduction-service";
+import { engagementsThisYear, listUpcomingWeddings } from "@/server/services/engagement-service";
+import { countOpenIntroductions, listActiveIntroductions } from "@/server/services/introduction-service";
 import { getMatchmakerProfile } from "@/server/services/matchmaker-service";
 import { listOpenReminders } from "@/server/services/reminder-service";
 
 export const metadata: Metadata = { title: "היום שלי" };
 
 const ACTIVE_INTRODUCTIONS_SHOWN = 6;
+const UPCOMING_WEDDINGS_SHOWN = 3;
 
 function Stat({ label, value, href, block }: { label: string; value: number; href: string; block: string }) {
   return (
@@ -36,12 +38,14 @@ function Stat({ label, value, href, block }: { label: string; value: number; hre
 
 export default async function DashboardPage() {
   const matchmakerId = await requireMatchmakerId();
-  const [profile, sides, stats, dueReminders, active] = await Promise.all([
+  const [profile, sides, openCount, engagedThisYear, dueReminders, active, weddings] = await Promise.all([
     getMatchmakerProfile(matchmakerId),
     countCandidatesBySide(matchmakerId),
-    introductionStats(matchmakerId),
-    listOpenReminders(matchmakerId, { until: todayAsDueDate() }),
+    countOpenIntroductions(matchmakerId),
+    engagementsThisYear(matchmakerId),
+    listOpenReminders(matchmakerId, { until: todayDate() }),
     listActiveIntroductions(matchmakerId, ACTIVE_INTRODUCTIONS_SHOWN),
+    listUpcomingWeddings(matchmakerId, UPCOMING_WEDDINGS_SHOWN),
   ]);
 
   return (
@@ -64,8 +68,8 @@ export default async function DashboardPage() {
       <div className="reveal mb-14 grid grid-cols-2 gap-x-5 gap-y-8 lg:grid-cols-4">
         <Stat label="בחורים" value={sides.MALE} href={routes.candidates(Side.MALE)} block="bg-teal" />
         <Stat label="בחורות" value={sides.FEMALE} href={routes.candidates(Side.FEMALE)} block="bg-coral" />
-        <Stat label="הצעות פתוחות" value={stats.open} href={routes.introductions} block="bg-sky" />
-        <Stat label="אירוסין השנה" value={stats.engagedThisYear} href={routes.successes} block="bg-lime" />
+        <Stat label="הצעות פתוחות" value={openCount} href={routes.introductions} block="bg-sky" />
+        <Stat label="אירוסין השנה" value={engagedThisYear} href={`${routes.engagements}?by=me`} block="bg-lime" />
       </div>
 
       <div className="grid gap-12 lg:grid-cols-[1fr_400px]">
@@ -106,6 +110,25 @@ export default async function DashboardPage() {
           </div>
         </Section>
       </div>
+
+      {weddings.length > 0 && (
+        <div className="mt-14">
+          <Section
+            title="חתונות קרובות"
+            actions={
+              <Link href={routes.weddings} className="text-sm text-muted hover:text-ink">
+                ללוח החתונות ←
+              </Link>
+            }
+          >
+            <div className="border-t-2 border-ink">
+              {weddings.map((engagement) => (
+                <WeddingRow key={engagement.id} engagement={engagement} showSource={false} />
+              ))}
+            </div>
+          </Section>
+        </div>
+      )}
     </>
   );
 }

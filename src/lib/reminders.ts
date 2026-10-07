@@ -1,5 +1,5 @@
 import { fullName } from "./candidates";
-import { toDateInputValue } from "./format";
+import { dayKey, todayKey } from "./format";
 import { routes } from "./routes";
 
 export type ReminderTiming = "overdue" | "today" | "upcoming";
@@ -13,15 +13,10 @@ type Subject = {
 
 // Due dates are whole days, stored as UTC midnight, so they are compared as calendar dates
 export function reminderTiming(dueAt: Date, now = new Date()): ReminderTiming {
-  const due = dueAt.toISOString().slice(0, 10);
-  const today = toDateInputValue(now);
+  const due = dayKey(dueAt);
+  const today = todayKey(now);
   if (due < today) return "overdue";
   return due === today ? "today" : "upcoming";
-}
-
-// Today's date in the same form as a stored due date, to fetch everything due by today
-export function todayAsDueDate(now = new Date()): Date {
-  return new Date(toDateInputValue(now));
 }
 
 // The candidate or couple a reminder is about, as a link target

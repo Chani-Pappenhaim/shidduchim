@@ -18,7 +18,10 @@ export const routes = {
   match: (candidateId: string) => `/candidates/${candidateId}/match`,
   introductions: "/introductions",
   introduction: (id: string) => `/introductions/${id}`,
-  successes: "/successes",
+  engagements: "/engagements",
+  engagement: (id: string) => `/engagements/${id}`,
+  newEngagement: (candidateId: string) => `/engagements/new?candidateId=${candidateId}`,
+  weddings: "/weddings",
   reminders: "/reminders",
   file: (id: string) => `/api/files/${id}`,
 };
