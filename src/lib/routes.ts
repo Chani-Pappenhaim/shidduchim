@@ -26,4 +26,5 @@ export const routes = {
   weddings: "/weddings",
   reminders: "/reminders",
   file: (id: string) => `/api/files/${id}`,
+  portal: (token: string) => `/portal/${token}`,
 };
