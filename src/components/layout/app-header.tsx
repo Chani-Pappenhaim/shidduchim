@@ -33,6 +33,7 @@ export function AppHeader({ name }: { name: string }) {
 
   return (
     <header className="sticky top-0 z-40 px-3 pt-3">
+      <div aria-hidden className="scroll-progress fixed inset-x-0 top-0 h-1.5 bg-lime" />
       <div
         className={cn(
           "mx-auto flex items-center justify-between gap-4 bg-paper px-4 py-2 transition-all duration-300",

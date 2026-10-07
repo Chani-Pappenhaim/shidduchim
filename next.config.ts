@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Candidate forms carry a photo and a resume file
     serverActions: { bodySizeLimit: "16mb" },
+    // Tabs visited in the last half minute reopen instantly; every save still refreshes them
+    staleTimes: { dynamic: 30 },
   },
 };
 

@@ -55,8 +55,8 @@ export default async function EngagementsPage({ searchParams }: { searchParams: 
         </EmptyState>
       ) : (
         <div className="reveal grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((engagement) => (
-            <CoupleCard key={engagement.id} engagement={engagement} />
+          {items.map((engagement, index) => (
+            <CoupleCard key={engagement.id} engagement={engagement} index={index} />
           ))}
         </div>
       )}
