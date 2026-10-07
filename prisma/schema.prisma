@@ -17,6 +17,7 @@ enum CandidateStatus {
   IN_PROCESS
   PAUSED
   ENGAGED
+  MARRIED
 }
 
 enum IntroductionStatus {
@@ -53,6 +54,7 @@ model Matchmaker {
 
   candidates     Candidate[]
   introductions  Introduction[]
+  engagements    Engagement[]
   reminders      Reminder[]
   mailConnection MailConnection?
 }
@@ -98,6 +100,8 @@ model Candidate {
   introductionsAsFemale Introduction[]    @relation("IntroductionFemale")
   reminders             Reminder[]
   invites               CandidateInvite[]
+  engagementAsMale      Engagement?       @relation("EngagementMale")
+  engagementAsFemale    Engagement?       @relation("EngagementFemale")
 
   @@index([matchmakerId, side, status])
   @@index([matchmakerId, lastName, firstName])
@@ -139,7 +143,6 @@ model Introduction {
   status       IntroductionStatus @default(PROPOSED)
   proposedBy   String?
   note         String?
-  engagedAt    DateTime?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -149,10 +152,40 @@ model Introduction {
   meetings   Meeting[]
   events     IntroductionEvent[]
   reminders  Reminder[]
+  engagement Engagement?
 
   @@unique([maleId, femaleId])
   @@index([matchmakerId, status, updatedAt])
   @@index([femaleId])
+}
+
+// An engaged or married couple with at least one partner from the matchmaker's database.
+// The couple counts as married once the wedding date has arrived.
+model Engagement {
+  id             String    @id @default(cuid())
+  matchmakerId   String
+  maleId         String?   @unique
+  femaleId       String?   @unique
+  // Name of the partner who is not in the matchmaker's database
+  partnerName    String?
+  introductionId String?   @unique
+  byMatchmaker   Boolean   @default(false)
+  // Who made the match, when it was not the matchmaker
+  madeBy         String?
+  engagedAt      DateTime
+  weddingDate    DateTime?
+  weddingVenue   String?
+  note           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  matchmaker   Matchmaker    @relation(fields: [matchmakerId], references: [id], onDelete: Cascade)
+  male         Candidate?    @relation("EngagementMale", fields: [maleId], references: [id], onDelete: SetNull)
+  female       Candidate?    @relation("EngagementFemale", fields: [femaleId], references: [id], onDelete: SetNull)
+  introduction Introduction? @relation(fields: [introductionId], references: [id], onDelete: SetNull)
+
+  @@index([matchmakerId, engagedAt])
+  @@index([matchmakerId, weddingDate])
 }
 
 model Meeting {

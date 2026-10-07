@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CandidateStatus, Side } from "@/generated/prisma/enums";
+import { MANUAL_STATUSES } from "@/lib/candidates";
 import { optionalDate, optionalEmail, optionalInt, optionalPhone, optionalText, requiredText } from "./fields";
 
 export const candidateSchema = z.object({
@@ -16,7 +17,7 @@ export const candidateSchema = z.object({
   parentsInfo: optionalText(1000),
   about: optionalText(3000),
   lookingFor: optionalText(2000),
-  status: z.enum(CandidateStatus).default(CandidateStatus.AVAILABLE),
+  status: z.enum(MANUAL_STATUSES).optional(),
 });
 
 export const noteSchema = z.object({

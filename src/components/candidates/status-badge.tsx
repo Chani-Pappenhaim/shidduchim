@@ -7,6 +7,7 @@ const TONES: Record<CandidateStatus, Tone> = {
   IN_PROCESS: "sky",
   PAUSED: "mist",
   ENGAGED: "lime",
+  MARRIED: "sand",
 };
 
 export function StatusBadge({ status, side }: { status: CandidateStatus; side: Side }) {
