@@ -5,6 +5,8 @@ export const CODE_LENGTH = 6;
 export const CODE_TTL_MINUTES = 10;
 export const CODE_RESEND_SECONDS = 60;
 export const MAX_CODE_ATTEMPTS = 5;
+// Codes one invite may send in total; afterwards the matchmaker has to send a new invite
+export const MAX_CODE_SENDS = 5;
 
 const MINUTE = 60_000;
 

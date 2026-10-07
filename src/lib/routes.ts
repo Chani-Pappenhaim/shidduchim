@@ -10,6 +10,23 @@ export function withQuery(path: string, params: Record<string, string | number |
   return search ? `${path}?${search}` : path;
 }
 
+const PLACEHOLDER_ORIGIN = "http://same.origin";
+
+// Accepts only a path on this site; anything a browser could resolve to another host falls back
+export function safeRedirectPath(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  try {
+    // Checked decoded too, since an encoded "\" or tab can be decoded again on the way
+    const decoded = decodeURIComponent(value);
+    const looksExternal = (path: string) => !path.startsWith("/") || path.startsWith("//") || /[\\\s]/.test(path);
+    if (looksExternal(value) || looksExternal(decoded)) return fallback;
+    const url = new URL(value, PLACEHOLDER_ORIGIN);
+    return url.origin === PLACEHOLDER_ORIGIN ? `${url.pathname}${url.search}` : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 // Central place for app URLs that are built in more than one spot
 export const routes = {
   candidates: (side: Side) => `/candidates?side=${SIDE_LABELS[side].slug}`,

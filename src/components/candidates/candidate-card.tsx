@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ageLabel, fullName } from "@/lib/candidates";
-import { cn } from "@/lib/cn";
 import { routes } from "@/lib/routes";
+import { BlockCard } from "@/components/ui/block-card";
 import type { CandidateSummary } from "@/server/services/candidate-service";
 import { CandidateAvatar } from "./candidate-avatar";
 import { StatusBadge } from "./status-badge";
@@ -22,9 +22,8 @@ export function CandidateCard({ candidate, index = 0, href = routes.candidate(ca
   const meta = [ageLabel(candidate), candidate.city, candidate.community].filter(Boolean).join(" · ");
 
   return (
-    <div className="group relative">
-      <div aria-hidden className={cn("absolute inset-0 translate-x-2 translate-y-2 transition-transform duration-200 group-hover:translate-x-3 group-hover:translate-y-3", BLOCKS[index % BLOCKS.length])} />
-      <article className="relative flex h-full flex-col border-2 border-ink bg-paper transition-transform duration-200 group-hover:-translate-y-1">
+    <BlockCard block={BLOCKS[index % BLOCKS.length]} index={index}>
+      <article className="flex flex-1 flex-col">
         <Link href={href} className="flex flex-1 flex-col focus-visible:outline-none">
           <CandidateAvatar candidate={candidate} photoId={candidate.files[0]?.id} className="border-b-2 border-ink" />
           <div className="flex flex-1 flex-col gap-2 p-4">
@@ -38,6 +37,6 @@ export function CandidateCard({ candidate, index = 0, href = routes.candidate(ca
         </Link>
         {footer && <div className="border-t-2 border-ink p-3">{footer}</div>}
       </article>
-    </div>
+    </BlockCard>
   );
 }

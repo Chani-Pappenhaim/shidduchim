@@ -50,8 +50,8 @@ export default async function WeddingsPage({ searchParams }: { searchParams: Pro
         {undated.length > 0 && (
           <Section title="עוד בלי תאריך">
             <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-              {undated.map((engagement) => (
-                <CoupleCard key={engagement.id} engagement={engagement} />
+              {undated.map((engagement, index) => (
+                <CoupleCard key={engagement.id} engagement={engagement} index={index} />
               ))}
             </div>
           </Section>

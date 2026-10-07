@@ -5,12 +5,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { fullName } from "@/lib/candidates";
 import { routes } from "@/lib/routes";
 import { requireMatchmakerId } from "@/server/auth/session";
-import { getCandidate } from "@/server/services/candidate-service";
+import { getCandidateForEdit } from "@/server/services/candidate-service";
 
 export const metadata: Metadata = { title: "עריכת כרטיס" };
 
 export default async function EditCandidatePage({ params }: { params: Promise<{ id: string }> }) {
-  const candidate = await getCandidate(await requireMatchmakerId(), (await params).id);
+  const candidate = await getCandidateForEdit(await requireMatchmakerId(), (await params).id);
   if (!candidate) notFound();
   return (
     <>

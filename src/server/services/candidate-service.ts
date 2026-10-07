@@ -95,6 +95,17 @@ export function getCandidate(matchmakerId: string, id: string) {
 
 export type CandidateDetails = NonNullable<Awaited<ReturnType<typeof getCandidate>>>;
 
+// Only what the edit form shows, so private notes and storage paths never reach the browser
+export function getCandidateForEdit(matchmakerId: string, id: string) {
+  return db.candidate.findFirst({
+    where: { id, matchmakerId },
+    omit: { matchmakerId: true, createdAt: true, updatedAt: true, profileVerifiedAt: true },
+    include: { files: { select: { id: true, kind: true, originalName: true } } },
+  });
+}
+
+export type EditableCandidate = NonNullable<Awaited<ReturnType<typeof getCandidateForEdit>>>;
+
 export function createCandidate(matchmakerId: string, input: CandidateInput) {
   return db.candidate.create({ data: { ...input, matchmakerId }, select: { id: true } });
 }

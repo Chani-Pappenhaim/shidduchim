@@ -24,6 +24,7 @@
   --animate-blink: blink 1s steps(1) infinite;
   --animate-rise: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   --animate-marquee: marquee 28s linear infinite;
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
 
   @keyframes blink {
     50% {
@@ -41,11 +42,31 @@
       transform: translateX(50%);
     }
   }
+  @keyframes shimmer {
+    50% {
+      opacity: 0.45;
+    }
+  }
+  @keyframes grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes turn {
+    to {
+      transform: rotate(1turn);
+    }
+  }
 }
 
 @layer base {
   html {
     color-scheme: light;
+    /* Keeps content scrolled into view clear of the sticky header */
+    scroll-padding-top: 6rem;
   }
 
   body {
@@ -79,6 +100,36 @@
     animation: rise linear both;
     animation-timeline: view();
     animation-range: entry 0% entry 60%;
+  }
+}
+
+/* Rises in on mount, delayed by the --i custom property so lists arrive one after another */
+@utility rise-in {
+  animation: var(--animate-rise);
+  animation-delay: calc(min(var(--i, 0), 10) * 55ms);
+}
+
+/* Fills from the start edge as the page scrolls */
+@utility scroll-progress {
+  display: none;
+  @supports (animation-timeline: scroll()) {
+    display: block;
+    transform: scaleX(0);
+    transform-origin: right;
+    animation: grow linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+/* Turns with the page scroll rather than with time */
+@utility spin-on-scroll {
+  @supports (animation-timeline: scroll()) {
+    animation: turn linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 1200px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }
 

@@ -1,6 +1,6 @@
 import "server-only";
 import { codeMail, inviteMail } from "@/lib/portal-mail";
-import { canResendCode, checkCode, CODE_LENGTH, codeExpiry, inviteExpiry, maskEmail, MAX_CODE_ATTEMPTS, type CodeCheck } from "@/lib/portal";
+import { canResendCode, checkCode, CODE_LENGTH, codeExpiry, inviteExpiry, maskEmail, MAX_CODE_ATTEMPTS, MAX_CODE_SENDS, type CodeCheck } from "@/lib/portal";
 import { routes } from "@/lib/routes";
 import { blanksToNull } from "@/lib/validation/fields";
 import type { PortalProfileInput } from "@/lib/validation/portal";
@@ -68,21 +68,24 @@ export async function findActiveInvite(token: string, now = new Date()) {
   };
 }
 
-export type CodeRequest = "sent" | "wait" | "invalid";
+export type CodeRequest = "sent" | "wait" | "exhausted" | "invalid";
 
 export async function sendPortalCode(token: string, now = new Date()): Promise<CodeRequest> {
   const invite = await db.candidateInvite.findFirst({
     where: activeInviteWhere(token, now),
-    select: { id: true, otpExpiresAt: true, candidate: { select: { firstName: true, email: true } } },
+    select: { id: true, otpExpiresAt: true, otpSends: true, candidate: { select: { firstName: true, email: true } } },
   });
   if (!invite?.candidate.email) return "invalid";
+  if (invite.otpSends >= MAX_CODE_SENDS) return "exhausted";
   if (!canResendCode(invite.otpExpiresAt, now)) return "wait";
 
+  // Counted atomically, so the total number of guesses over the invite's life stays bounded
   const code = randomDigits(CODE_LENGTH);
-  await db.candidateInvite.update({
-    where: { id: invite.id },
-    data: { otpHash: codeHash(invite.id, code), otpExpiresAt: codeExpiry(now), otpAttempts: 0 },
+  const { count } = await db.candidateInvite.updateMany({
+    where: { id: invite.id, otpSends: { lt: MAX_CODE_SENDS } },
+    data: { otpHash: codeHash(invite.id, code), otpExpiresAt: codeExpiry(now), otpAttempts: 0, otpSends: { increment: 1 } },
   });
+  if (count === 0) return "exhausted";
   await sendSystemMail({ to: invite.candidate.email, ...codeMail(invite.candidate.firstName, code) });
   return "sent";
 }

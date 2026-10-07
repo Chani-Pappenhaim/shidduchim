@@ -47,8 +47,8 @@ export const candidateFiltersSchema = z.object({
 export const ADVANCED_FILTER_KEYS = ["minAge", "maxAge", "minHeight", "maxHeight", "city", "community", "occupation", "notProposed"] as const;
 
 // The filters as URL params, for paging links that keep the current search
-export function filterParams({ page: _page, ...filters }: CandidateFilters): Record<string, string | number | undefined> {
-  return filters;
+export function filterParams(filters: CandidateFilters): Record<string, string | number | undefined> {
+  return { ...filters, page: undefined };
 }
 
 export function hasFilters(filters: CandidateFilters): boolean {

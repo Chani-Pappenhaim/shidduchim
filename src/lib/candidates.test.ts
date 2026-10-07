@@ -3,7 +3,7 @@ import { CandidateStatus, Side } from "@/generated/prisma/enums";
 import { ageFrom, birthDateRange, initials, isTaken, statusLabel } from "./candidates";
 import { coupleOf } from "./introductions";
 import { reminderTiming } from "./reminders";
-import { withQuery } from "./routes";
+import { safeRedirectPath, withQuery } from "./routes";
 
 describe("candidates", () => {
   it("computes age around the birthday", () => {
@@ -62,5 +62,14 @@ describe("withQuery", () => {
   it("drops empty params", () => {
     expect(withQuery("/engagements", { state: "married", by: undefined, page: 2 })).toBe("/engagements?state=married&page=2");
     expect(withQuery("/engagements", { by: "" })).toBe("/engagements");
+  });
+});
+
+describe("safe redirects", () => {
+  it("keeps same-site paths and rejects anything that leaves the site", () => {
+    expect(safeRedirectPath("/candidates?side=female", "/x")).toBe("/candidates?side=female");
+    for (const bad of ["//evil.com", "/\\evil.com", "/%09/evil.com", "/\tevil.com", "https://evil.com", "", null]) {
+      expect(safeRedirectPath(bad, "/x")).toBe("/x");
+    }
   });
 });

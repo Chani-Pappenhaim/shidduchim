@@ -6,6 +6,8 @@ import { MAX_CODE_ATTEMPTS } from "@/lib/portal";
 import { routes } from "@/lib/routes";
 import { portalCodeSchema, portalProfileSchema } from "@/lib/validation/portal";
 import { endPortalSession, getPortalInviteId, startPortalSession } from "@/server/auth/portal-session";
+import { consumeAll, RATE_LIMITED_MESSAGE, RATE_RULES } from "@/server/rate-limit";
+import { clientIp } from "@/server/request-ip";
 import { sendPortalCode, updatePortalProfile, verifyPortalCode, type CodeVerification } from "@/server/services/portal-service";
 
 const INVALID_LINK = "הקישור כבר לא בתוקף. אפשר לבקש קישור חדש מהשדכן/ית";
@@ -13,10 +15,12 @@ const INVALID_LINK = "הקישור כבר לא בתוקף. אפשר לבקש ק�
 const CODE_REQUEST_MESSAGES = {
   sent: { success: "שלחנו קוד למייל שלך" },
   wait: { success: "כבר שלחנו קוד. אפשר לבקש קוד חדש בעוד דקה" },
+  exhausted: { error: "נשלחו כבר כמה קודים לקישור הזה. אפשר לבקש קישור חדש מהשדכן/ית" },
   invalid: { error: INVALID_LINK },
 } satisfies Record<string, FormState>;
 
 export async function requestPortalCodeAction(token: string): Promise<FormState> {
+  if (!(await consumeAll([[`portal-code:ip:${await clientIp()}`, RATE_RULES.portalCodePerIp]]))) return { error: RATE_LIMITED_MESSAGE };
   return CODE_REQUEST_MESSAGES[await sendPortalCode(token)];
 }
 

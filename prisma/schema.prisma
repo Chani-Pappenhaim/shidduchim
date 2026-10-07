@@ -49,6 +49,8 @@ model Matchmaker {
   city           String?
   about          String?
   emailSignature String?
+  // Bumped on sign-out so every earlier session cookie stops working
+  sessionVersion Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -241,9 +243,19 @@ model CandidateInvite {
   otpHash      String?
   otpExpiresAt DateTime?
   otpAttempts  Int       @default(0)
+  otpSends     Int       @default(0)
   createdAt    DateTime  @default(now())
 
   candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
   @@index([candidateId])
+}
+
+// Fixed-window counters that slow down repeated sign-in and mail requests
+model RateLimit {
+  key         String   @id
+  windowStart DateTime
+  count       Int
+
+  @@index([windowStart])
 }
