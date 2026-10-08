@@ -9,8 +9,8 @@ const DEMO_EMAIL = "demo@shadchones.test";
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "demo-shadchan-1";
 
 // Seeds the local D1 database that `next dev` and `wrangler dev` use
-const platform = getPlatformProxy<CloudflareEnv>();
-let db: PrismaClient;
+const platform = await getPlatformProxy<CloudflareEnv>();
+const db = new PrismaClient({ adapter: new PrismaD1(platform.env.DB) });
 
 // Whole-day dates are stored as UTC midnight, relative to today
 function day(offset: number): Date {
@@ -35,7 +35,6 @@ const women = [
 ];
 
 async function main() {
-  db = new PrismaClient({ adapter: new PrismaD1((await platform).env.DB) });
   await db.matchmaker.deleteMany({ where: { email: DEMO_EMAIL } });
   const matchmaker = await db.matchmaker.create({
     data: { email: DEMO_EMAIL, name: "שדכנית לדוגמה", city: "בני ברק", passwordHash: await hashPassword(DEMO_PASSWORD) },
@@ -78,9 +77,9 @@ async function main() {
   console.log(`Seeded demo matchmaker ${DEMO_EMAIL}`);
 }
 
-main()
+await main()
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;
   })
-  .finally(async () => (await platform).dispose());
+  .finally(() => platform.dispose());
