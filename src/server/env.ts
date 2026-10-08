@@ -26,5 +26,10 @@ const productionSchema = envSchema.refine(
   "Production needs real SESSION_SECRET, ENCRYPTION_KEY and CRON_SECRET values",
 );
 
-// Validated server environment; fails fast on misconfiguration
-export const env = (process.env.NODE_ENV === "production" ? productionSchema : envSchema).parse(process.env);
+type Env = z.infer<typeof envSchema>;
+let parsed: Env | undefined;
+
+// Validated server environment, read on first use so the build never needs the runtime secrets
+export const env = new Proxy({} as Env, {
+  get: (_, key) => (parsed ??= (process.env.NODE_ENV === "production" ? productionSchema : envSchema).parse(process.env))[key as keyof Env],
+});
