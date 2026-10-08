@@ -12,5 +12,10 @@
     { "binding": "DB", "database_name": "shadchones", "migrations_dir": "migrations" }
   ],
   "kv_namespaces": [{ "binding": "FILES" }],
-  "vars": { "NODE_ENV": "production" }
+  "vars": {
+    "NODE_ENV": "production",
+    // Candidate files live in a private Backblaze B2 bucket; its keys are Worker secrets
+    "S3_ENDPOINT": "https://s3.eu-central-003.backblazeb2.com",
+    "S3_BUCKET": "shadchones-candidate-files"
+  }
 }
