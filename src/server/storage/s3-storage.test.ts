@@ -10,7 +10,7 @@ const storage = new S3FileStorage({
 });
 
 function stubFetch(response: Response) {
-  const fetchMock = vi.fn(async (_request: Request) => response);
+  const fetchMock = vi.fn<(request: Request) => Promise<Response>>(async () => response);
   vi.stubGlobal("fetch", fetchMock);
   return () => fetchMock.mock.calls[0][0];
 }
