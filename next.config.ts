@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
       config.externals.push(
         ({ context, request }: { context?: string; request?: string }, callback: (err?: Error, result?: string) => void) =>
           request?.endsWith(".wasm?module") && context
-            ? callback(undefined, `commonjs ${path.resolve(context, request).replaceAll("\\", "/")}`)
+            ? callback(undefined, `import ${path.resolve(context, request).replaceAll("\\", "/")}`)
             : callback(),
       );
     }
