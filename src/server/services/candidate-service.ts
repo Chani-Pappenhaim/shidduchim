@@ -60,7 +60,7 @@ export async function listCandidates(
   };
   // Engaged and married candidates stay hidden unless their status is asked for explicitly
   if (freeOnly && !filters.status) where.status = { notIn: [...TAKEN_STATUSES] };
-  const [items, total] = await db.$transaction([
+  const [items, total] = await Promise.all([
     db.candidate.findMany({
       where,
       select: candidateSummarySelect,

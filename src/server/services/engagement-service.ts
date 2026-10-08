@@ -50,7 +50,7 @@ export async function listEngagements(matchmakerId: string, filters: EngagementF
   const today = todayDate();
   const source: Prisma.EngagementWhereInput = { matchmakerId, ...(filters.by === "me" && { byMatchmaker: true }) };
   const where = { ...source, ...(filters.state && stateWhere(filters.state, today)) };
-  const [items, total, engaged, married, everyone, mine] = await db.$transaction([
+  const [items, total, engaged, married, everyone, mine] = await Promise.all([
     db.engagement.findMany({
       where,
       select: engagementSelect,
@@ -186,7 +186,7 @@ export async function releaseCandidateEngagement(tx: Tx, candidateId: string) {
 // Wedding board: upcoming weddings by date, and engaged couples still without a date
 export async function listWeddings(matchmakerId: string, { onlyMine }: { onlyMine: boolean }) {
   const where: Prisma.EngagementWhereInput = { matchmakerId, ...(onlyMine && { byMatchmaker: true }) };
-  const [upcoming, undated] = await db.$transaction([
+  const [upcoming, undated] = await Promise.all([
     db.engagement.findMany({ where: { ...where, weddingDate: { gte: todayDate() } }, select: engagementSelect, orderBy: { weddingDate: "asc" } }),
     db.engagement.findMany({ where: { ...where, weddingDate: null }, select: engagementSelect, orderBy: { engagedAt: "desc" } }),
   ]);

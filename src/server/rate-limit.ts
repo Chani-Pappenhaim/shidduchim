@@ -45,8 +45,10 @@ export async function consumeRateLimit(key: string, { limit, windowSeconds }: Ra
 
 // Every rule must pass; all are counted so a blocked caller keeps paying for each try
 export async function consumeAll(checks: [string, RateRule][], now = new Date()): Promise<boolean> {
-  const results = await Promise.all(checks.map(([key, rule]) => consumeRateLimit(key, rule, now)));
-  return results.every(Boolean);
+  let allowed = true;
+  // One write at a time: D1 runs writes serially anyway
+  for (const [key, rule] of checks) allowed = (await consumeRateLimit(key, rule, now)) && allowed;
+  return allowed;
 }
 
 export async function pruneRateLimits(now = new Date()) {

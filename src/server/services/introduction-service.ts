@@ -66,7 +66,7 @@ export async function proposeIntroduction(matchmakerId: string, candidateId: str
 
 export async function listIntroductions(matchmakerId: string, filters: IntroductionFilters) {
   const where: Prisma.IntroductionWhereInput = { matchmakerId, status: filters.status };
-  const [items, total, groups] = await db.$transaction([
+  const [items, total, groups] = await Promise.all([
     db.introduction.findMany({
       where,
       select: introductionSummarySelect,
