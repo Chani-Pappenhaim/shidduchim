@@ -1,5 +1,6 @@
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -45,6 +46,18 @@ const nextConfig: NextConfig = {
       // The workspace is the home page; signed-out visitors continue on to the login page
       { source: "/", destination: "/dashboard", permanent: false },
     ];
+  },
+  // The Prisma query engine is a Workers wasm module; leave it for the Workers bundler to load
+  webpack(config, { isServer, nextRuntime }) {
+    if (isServer && nextRuntime === "nodejs") {
+      config.externals.push(
+        ({ context, request }: { context?: string; request?: string }, callback: (err?: Error, result?: string) => void) =>
+          request?.endsWith(".wasm?module") && context
+            ? callback(undefined, `commonjs ${path.resolve(context, request).replaceAll("\\", "/")}`)
+            : callback(),
+      );
+    }
+    return config;
   },
   experimental: {
     // Candidate forms carry a photo and a resume file
