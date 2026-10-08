@@ -5,7 +5,7 @@ import { routes } from "@/lib/routes";
 import { blanksToNull } from "@/lib/validation/fields";
 import type { PortalProfileInput } from "@/lib/validation/portal";
 import { randomDigits, randomToken, sha256 } from "@/server/crypto";
-import { db } from "@/server/db";
+import { db, transaction } from "@/server/db";
 import { env } from "@/server/env";
 import { sendSystemMail } from "@/server/mail/system-mailer";
 import { assertCandidateOwner } from "./ownership";
@@ -27,10 +27,10 @@ export async function createInvite(matchmakerId: string, candidateId: string, no
 
   const token = randomToken();
   const expiresAt = inviteExpiry(now);
-  await db.$transaction([
-    db.candidateInvite.deleteMany({ where: { candidateId } }),
-    db.candidateInvite.create({ data: { candidateId, tokenHash: sha256(token), expiresAt } }),
-  ]);
+  await transaction(async (tx) => {
+    await tx.candidateInvite.deleteMany({ where: { candidateId } });
+    await tx.candidateInvite.create({ data: { candidateId, tokenHash: sha256(token), expiresAt } });
+  });
 
   const url = `${env.APP_URL}${routes.portal(token)}`;
   await sendSystemMail({

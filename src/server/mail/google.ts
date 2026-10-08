@@ -40,7 +40,7 @@ async function tokenRequest(params: Record<string, string>) {
     method: "POST",
     body: new URLSearchParams({ client_id: env.GOOGLE_CLIENT_ID!, client_secret: env.GOOGLE_CLIENT_SECRET!, ...params }),
   });
-  const data = await response.json();
+  const data = (await response.json()) as { error?: string };
   if (response.ok) return data as { access_token: string; refresh_token?: string; id_token?: string };
   if (data.error === "invalid_grant") throw new MailGrantRevokedError();
   throw new Error(`Google token request failed: ${data.error ?? response.status}`);

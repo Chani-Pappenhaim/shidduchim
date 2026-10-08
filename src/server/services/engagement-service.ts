@@ -5,7 +5,7 @@ import { fullName } from "@/lib/candidates";
 import type { CoupleState } from "@/lib/engagements";
 import { todayDate } from "@/lib/format";
 import type { EngagementDetailsInput, EngagementFilters, NewEngagementInput } from "@/lib/validation/engagement";
-import { db } from "@/server/db";
+import { db, transaction } from "@/server/db";
 import { candidateSummarySelect } from "./candidate-select";
 import { syncCandidateStatuses } from "./candidate-status";
 import { closeOpenIntroductions, setIntroductionStatus } from "./introduction-transitions";
@@ -50,7 +50,7 @@ export async function listEngagements(matchmakerId: string, filters: EngagementF
   const today = todayDate();
   const source: Prisma.EngagementWhereInput = { matchmakerId, ...(filters.by === "me" && { byMatchmaker: true }) };
   const where = { ...source, ...(filters.state && stateWhere(filters.state, today)) };
-  const [items, total, engaged, married, everyone, mine] = await db.$transaction([
+  const [items, total, engaged, married, everyone, mine] = await Promise.all([
     db.engagement.findMany({
       where,
       select: engagementSelect,
@@ -89,7 +89,7 @@ export function engagementOfIntroduction(matchmakerId: string, introductionId: s
 // Records that one of the matchmaker's candidates got engaged to someone outside the database
 export function createEngagement(matchmakerId: string, input: NewEngagementInput) {
   const { candidateId, ...data } = input;
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const candidate = await tx.candidate.findFirst({ where: { id: candidateId, matchmakerId }, select: { id: true, side: true } });
     if (!candidate) throw new NotFoundError();
     if (await tx.engagement.findFirst({ where: partnerOf(candidate.id), select: { id: true } })) {
@@ -142,7 +142,7 @@ function stripUndefined<T extends object>(data: T): Partial<T> {
 
 export function updateEngagement(matchmakerId: string, input: EngagementDetailsInput) {
   const { engagementId, partnerName, ...data } = input;
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const found = await tx.engagement.findFirst({ where: { id: engagementId, matchmakerId }, select: { maleId: true, femaleId: true } });
     if (!found) throw new NotFoundError();
     const hasOutsidePartner = !found.maleId || !found.femaleId;
@@ -158,7 +158,7 @@ export function updateEngagement(matchmakerId: string, input: EngagementDetailsI
 
 // Removes a broken-off engagement; the introduction it came from is marked as declined
 export function cancelEngagement(matchmakerId: string, engagementId: string) {
-  return db.$transaction(async (tx) => {
+  return transaction(async (tx) => {
     const found = await tx.engagement.findFirst({
       where: { id: engagementId, matchmakerId },
       select: { maleId: true, femaleId: true, introductionId: true },
@@ -186,7 +186,7 @@ export async function releaseCandidateEngagement(tx: Tx, candidateId: string) {
 // Wedding board: upcoming weddings by date, and engaged couples still without a date
 export async function listWeddings(matchmakerId: string, { onlyMine }: { onlyMine: boolean }) {
   const where: Prisma.EngagementWhereInput = { matchmakerId, ...(onlyMine && { byMatchmaker: true }) };
-  const [upcoming, undated] = await db.$transaction([
+  const [upcoming, undated] = await Promise.all([
     db.engagement.findMany({ where: { ...where, weddingDate: { gte: todayDate() } }, select: engagementSelect, orderBy: { weddingDate: "asc" } }),
     db.engagement.findMany({ where: { ...where, weddingDate: null }, select: engagementSelect, orderBy: { engagedAt: "desc" } }),
   ]);

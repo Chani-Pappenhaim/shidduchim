@@ -4,7 +4,7 @@ import type { Side } from "@/generated/prisma/enums";
 import { birthDateRange, isTaken, TAKEN_STATUSES } from "@/lib/candidates";
 import type { CandidateFilters, CandidateInput } from "@/lib/validation/candidate";
 import { blanksToNull } from "@/lib/validation/fields";
-import { db } from "@/server/db";
+import { db, transaction } from "@/server/db";
 import { removeStoredFiles } from "./candidate-file-service";
 import { candidateSummarySelect } from "./candidate-select";
 import { releaseCandidateEngagement } from "./engagement-service";
@@ -16,17 +16,18 @@ export const CANDIDATES_PAGE_SIZE = 24;
 
 const SEARCH_FIELDS = ["firstName", "lastName", "city", "community", "occupation"] as const;
 
+// SQLite's LIKE already ignores case for Latin letters, and Hebrew has none
 // Every term must match at least one searchable field, so "משה כהן" finds Moshe Cohen
 function searchWhere(q: string | undefined): Prisma.CandidateWhereInput {
   const terms = q?.split(/\s+/).filter(Boolean) ?? [];
   return {
     AND: terms.map((term) => ({
-      OR: SEARCH_FIELDS.map((field) => ({ [field]: { contains: term, mode: "insensitive" } })),
+      OR: SEARCH_FIELDS.map((field) => ({ [field]: { contains: term } })),
     })),
   };
 }
 
-const containsText = (value: string | undefined) => (value ? { contains: value, mode: "insensitive" as const } : undefined);
+const containsText = (value: string | undefined) => (value ? { contains: value } : undefined);
 
 const between = (min: number | undefined, max: number | undefined) =>
   min === undefined && max === undefined ? undefined : { gte: min, lte: max };
@@ -59,7 +60,7 @@ export async function listCandidates(
   };
   // Engaged and married candidates stay hidden unless their status is asked for explicitly
   if (freeOnly && !filters.status) where.status = { notIn: [...TAKEN_STATUSES] };
-  const [items, total] = await db.$transaction([
+  const [items, total] = await Promise.all([
     db.candidate.findMany({
       where,
       select: candidateSummarySelect,
@@ -122,7 +123,7 @@ export async function updateCandidate(matchmakerId: string, id: string, input: C
 
 export async function deleteCandidate(matchmakerId: string, id: string) {
   await assertCandidateOwner(matchmakerId, id);
-  const deleted = await db.$transaction(async (tx) => {
+  const deleted = await transaction(async (tx) => {
     await releaseCandidateEngagement(tx, id);
     return tx.candidate.delete({ where: { id }, select: { side: true, files: { select: { storageKey: true } } } });
   });

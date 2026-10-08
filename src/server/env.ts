@@ -2,8 +2,6 @@ import "server-only";
 import { z } from "zod";
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1),
-  DATABASE_POOL_SIZE: z.coerce.number().int().min(1).default(10),
   SESSION_SECRET: z.string().min(32),
   ENCRYPTION_KEY: z.string().regex(/^[0-9a-f]{64}$/i, "Must be 64 hex characters"),
   APP_URL: z.url().default("http://localhost:3000"),
@@ -17,5 +15,11 @@ const envSchema = z.object({
   CRON_SECRET: z.string().optional(),
 });
 
+// Example values from .env.example must never sign or encrypt anything in production
+const productionSchema = envSchema.refine(
+  (e) => !e.SESSION_SECRET.startsWith("change-me") && !/^0+$/.test(e.ENCRYPTION_KEY) && !!e.CRON_SECRET,
+  "Production needs real SESSION_SECRET, ENCRYPTION_KEY and CRON_SECRET values",
+);
+
 // Validated server environment; fails fast on misconfiguration
-export const env = envSchema.parse(process.env);
+export const env = (process.env.NODE_ENV === "production" ? productionSchema : envSchema).parse(process.env);

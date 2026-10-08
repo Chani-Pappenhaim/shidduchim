@@ -1,4 +1,6 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -18,7 +20,8 @@ const CONTENT_SECURITY_POLICY = [
 
 const SECURITY_HEADERS = [
   { key: "Content-Security-Policy", value: CONTENT_SECURITY_POLICY },
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+  // Only over HTTPS; on localhost it would push the browser to an https:// address that does not exist
+  ...(isProd ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }] : []),
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -27,6 +30,8 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Lets the dev server be opened as 127.0.0.1 as well as localhost
+  allowedDevOrigins: ["127.0.0.1"],
   async headers() {
     return [
       { source: "/:path*", headers: SECURITY_HEADERS },
@@ -42,6 +47,18 @@ const nextConfig: NextConfig = {
       { source: "/", destination: "/dashboard", permanent: false },
     ];
   },
+  // The Prisma query engine is a Workers wasm module; leave it for the Workers bundler to load
+  webpack(config, { isServer, nextRuntime }) {
+    if (isServer && nextRuntime === "nodejs") {
+      config.externals.push(
+        ({ context, request }: { context?: string; request?: string }, callback: (err?: Error, result?: string) => void) =>
+          request?.endsWith(".wasm?module") && context
+            ? callback(undefined, `import ${path.resolve(context, request).replaceAll("\\", "/")}`)
+            : callback(),
+      );
+    }
+    return config;
+  },
   experimental: {
     // Candidate forms carry a photo and a resume file
     serverActions: { bodySizeLimit: "16mb" },
@@ -51,3 +68,6 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// Gives `next dev` the local D1 database and KV namespace from wrangler.jsonc
+initOpenNextCloudflareForDev();

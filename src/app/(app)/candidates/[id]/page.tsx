@@ -15,6 +15,7 @@ import { ReminderForm } from "@/components/reminders/reminder-form";
 import { ReminderList } from "@/components/reminders/reminder-list";
 import { LinkButton } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { Section } from "@/components/ui/section";
 import { fullName, SIDE_LABELS } from "@/lib/candidates";
 import { routes } from "@/lib/routes";
@@ -61,6 +62,7 @@ export default async function CandidatePage({ params }: Props) {
 
   return (
     <article className="grid gap-10 md:grid-cols-[300px_1fr] lg:gap-16">
+      <ScrollToTop />
       <aside className="flex flex-col gap-6">
         <Link href={routes.candidates(candidate.side)} className="text-sm text-muted hover:text-ink">
           → כל ה{labels.many}

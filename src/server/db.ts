@@ -1,17 +1,26 @@
 import "server-only";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@/generated/prisma/client";
-import { env } from "./env";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { PrismaD1 } from "@prisma/adapter-d1";
+import { type Prisma, PrismaClient } from "@/generated/prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+let client: PrismaClient | undefined;
 
-function createClient() {
-  const adapter = new PrismaPg({ connectionString: env.DATABASE_URL, max: env.DATABASE_POOL_SIZE });
-  // Generous limits so a slow local database or a busy single connection does not abort transactions
-  return new PrismaClient({ adapter, transactionOptions: { maxWait: 15_000, timeout: 20_000 } });
+// The D1 binding only exists once the worker runs, so the client is created on first use
+function getClient(): PrismaClient {
+  client ??= new PrismaClient({ adapter: new PrismaD1(getCloudflareContext().env.DB) });
+  return client;
 }
 
-// Single shared client, reused across hot reloads in development
-export const db = globalForPrisma.prisma ?? createClient();
+// Single shared client for the D1 database; services use it like a plain PrismaClient
+export const db = new Proxy({} as PrismaClient, {
+  get: (_, property) => {
+    const value = Reflect.get(getClient(), property);
+    return typeof value === "function" ? value.bind(getClient()) : value;
+  },
+});
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+// D1 has no interactive transactions, so the steps run in order on the shared client.
+// Each step stays scoped by ownership checks, and a failure part-way leaves earlier steps applied.
+export function transaction<T>(steps: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  return steps(db);
+}

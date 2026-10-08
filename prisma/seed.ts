@@ -1,14 +1,16 @@
-import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
-import bcrypt from "bcryptjs";
+import { PrismaD1 } from "@prisma/adapter-d1";
+import { getPlatformProxy } from "wrangler";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { hashPassword } from "../src/server/auth/password";
 import { CandidateStatus, IntroductionStatus, Side } from "../src/generated/prisma/enums";
 
 // Demo matchmaker with sample data for local development; rerunning replaces only this account
 const DEMO_EMAIL = "demo@shadchones.test";
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "demo-shadchan-1";
 
-const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL, max: 1 }) });
+// Seeds the local D1 database that `next dev` and `wrangler dev` use
+const platform = await getPlatformProxy<CloudflareEnv>();
+const db = new PrismaClient({ adapter: new PrismaD1(platform.env.DB) });
 
 // Whole-day dates are stored as UTC midnight, relative to today
 function day(offset: number): Date {
@@ -35,7 +37,7 @@ const women = [
 async function main() {
   await db.matchmaker.deleteMany({ where: { email: DEMO_EMAIL } });
   const matchmaker = await db.matchmaker.create({
-    data: { email: DEMO_EMAIL, name: "שדכנית לדוגמה", city: "בני ברק", passwordHash: await bcrypt.hash(DEMO_PASSWORD, 10) },
+    data: { email: DEMO_EMAIL, name: "שדכנית לדוגמה", city: "בני ברק", passwordHash: await hashPassword(DEMO_PASSWORD) },
   });
   const matchmakerId = matchmaker.id;
   const create = (side: Side) => (person: (typeof men)[number]) => db.candidate.create({ data: { matchmakerId, side, ...person } });
@@ -75,9 +77,9 @@ async function main() {
   console.log(`Seeded demo matchmaker ${DEMO_EMAIL}`);
 }
 
-main()
+await main()
   .catch((error) => {
     console.error(error);
     process.exitCode = 1;
   })
-  .finally(() => db.$disconnect());
+  .finally(() => platform.dispose());

@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  // Loads the query compiler as a Workers WebAssembly module
+  runtime  = "cloudflare"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 enum Side {
